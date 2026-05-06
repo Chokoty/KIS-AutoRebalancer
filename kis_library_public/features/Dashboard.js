@@ -11,18 +11,7 @@ function setupDashboardSheet(sheet) {
     .setBackground('#4285f4')
     .setFontColor('white');
   
-  // 업데이트 알림 배너 (A2열)
-  const updateMsg = checkVersionUpdate();
-  if (updateMsg) {
-    sheet.getRange('A2:N2').merge()
-      .setValue(updateMsg)
-      .setFontWeight('bold')
-      .setFontColor('white')
-      .setBackground('#ea4335')
-      .setHorizontalAlignment('center');
-  } else {
-    sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
-  }
+  sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
   
   // 요약 정보 라벨 (A열)
   sheet.getRange('A3:A7').setValues([
@@ -199,25 +188,13 @@ function updateDashboard() {
     const triggers = ScriptApp.getProjectTriggers();
     // 차선유지는 정기 리밸런싱(scheduledBiWeeklyRebalance)을 의미함
     const hasHighwayTrigger = triggers.some(t => t.getHandlerFunction() === 'scheduledBiWeeklyRebalance');
-    const hasAIDrivingTrigger = triggers.some(t => t.getHandlerFunction() === 'automatedAIRebalance');
-    
-    // 트리거 상태와 프로퍼티 동기화 (수동 삭제 대응)
     const laneKeepingStatus = hasHighwayTrigger ? 'ON' : 'OFF';
-    const aiDrivingStatus = hasAIDrivingTrigger ? 'ON' : 'OFF';
-    const fsdMode = props.getProperty('FSD_DRIVING_MODE') || 'Standard';
-    
     props.setProperty('HIGHWAY_LANE_KEEPING', hasHighwayTrigger ? 'TRUE' : 'FALSE');
-    props.setProperty('AI_AUTONOMOUS_DRIVING', hasAIDrivingTrigger ? 'TRUE' : 'FALSE');
-    
-    // 자동새로고침(automatedRefreshRoutine)은 기본 활성화이므로 상태창에서는 주행 관련인 차선유지/FSD만 표시
-    const statusText = `차선유지:${laneKeepingStatus} / 감독형 FSD:${aiDrivingStatus} [${fsdMode}]`;
+
+    const statusText = `차선유지:${laneKeepingStatus}`;
     const statusCell = sheet.getRange('B7');
     statusCell.setValue(statusText);
-    if (hasHighwayTrigger || hasAIDrivingTrigger) {
-      statusCell.setFontColor('#137333').setFontWeight('bold'); // 초록 (하나라도 켜져있음)
-    } else {
-      statusCell.setFontColor('#5f6368').setFontWeight('bold'); // 회색 (모두 꺼짐)
-    }
+    statusCell.setFontColor(hasHighwayTrigger ? '#137333' : '#5f6368').setFontWeight('bold');
 
     // 5-1. 추천 인출액 계산 (공식 적용)
     // 월 이론 인출액 = 총자산 × ((1 + r)^(1/12) - 1)
@@ -350,14 +327,11 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
   const config = getConfig();
   const tolerance = options.tolerance || config.rebalanceTolerance || 2.0;
   const profitTakingThreshold = options.profitTakingThreshold || config.profitTakingThreshold || 40.0;
-  const fsdMode = PropertiesService.getScriptProperties().getProperty('FSD_DRIVING_MODE') || 'Standard';
-  const aiDrivingEnabled = PropertiesService.getScriptProperties().getProperty('AI_AUTONOMOUS_DRIVING') === 'TRUE';
-  // TA 수량 조정: 감독형 FSD ON 이거나, Standard 외 모드를 수동 선택한 경우에만 적용
-  const useTAForQty = aiDrivingEnabled || fsdMode !== 'Standard';
-  const REDISTRIBUTE_THRESHOLD = 0.15; // 수익률 15% 이상 시 재배분 매도 고려
+  const useTAForQty = false;
+  const REDISTRIBUTE_THRESHOLD = 0.15;
   const allStocks = [];
   const priceCache = {};
-  const scoreCache = {}; // { code: { score, summary } }
+  const scoreCache = {};
 
   holdings.forEach(h => priceCache[h.code] = h.currentPrice);
   Object.keys(targetPortfolio).forEach(code => {
@@ -365,13 +339,7 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
       priceCache[code] = getCurrentPrice(code);
       if(priceCache[code] > 0) Utilities.sleep(100);
     }
-    try {
-      scoreCache[code] = getConfluenceScore(code);
-      Utilities.sleep(200);
-    } catch (e) {
-      Logger.log('[TA] ' + code + ' 점수 조회 실패, 중립 사용: ' + e.toString());
-      scoreCache[code] = { score: 0, summary: '조회 실패 (중립)' };
-    }
+    scoreCache[code] = { score: 0, summary: '중립' };
   });
 
   const currentRatios = {};
