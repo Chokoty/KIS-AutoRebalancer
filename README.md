@@ -15,51 +15,64 @@
 ## 📂 파일 구조
 
 ```
-kis_library_public/
-├── core/
-│   ├── KISClient.js     # 한국투자증권 REST API 통신 모듈
-│   ├── config.js        # 환경 설정 및 토큰 관리
-│   └── code.js          # 포트폴리오 조회, 자동 리밸런싱 트리거
-├── features/
-│   ├── Dashboard.js     # 리밸런싱 대시보드 UI 및 주문 실행
-│   ├── Withdraw.js      # 수익 실현 및 인출 계획
-│   └── SecureConfig.js  # API 키 보안 저장 관리
-└── utils/
-    ├── Menu.js          # 구글 시트 상단 메뉴 구성
-    ├── SheetManager.js  # 시트 초기화 및 렌더링 유틸리티
-    └── UsageGuide.js    # 사용법 안내
+kis_auto_rebalance/
+├── container/
+│   └── code.gs          # 구글 시트에 직접 붙여넣는 컨테이너 스크립트
+└── kis_library_public/  # GAS 라이브러리 (Script ID로 추가)
+    ├── core/
+    │   ├── KISClient.js     # 한국투자증권 REST API 통신 모듈
+    │   ├── config.js        # 환경 설정 및 토큰 관리
+    │   └── code.js          # 포트폴리오 조회, 자동 리밸런싱 트리거
+    ├── features/
+    │   ├── Dashboard.js     # 리밸런싱 대시보드 UI 및 주문 실행
+    │   ├── Withdraw.js      # 수익 실현 및 인출 계획
+    │   └── SecureConfig.js  # API 키 보안 저장 관리
+    └── utils/
+        ├── Menu.js          # 구글 시트 상단 메뉴 구성
+        ├── SheetManager.js  # 시트 초기화 및 렌더링 유틸리티
+        └── UsageGuide.js    # 사용법 안내
 ```
 
 ## ⚙️ 설치 방법
 
-### 1. 구글 시트에 스크립트 연결
+### 1. 라이브러리 추가
 
-구글 스프레드시트를 새로 만들고, `확장 프로그램 > Apps Script`에서 이 레포의 코드를 복사하거나 `clasp`으로 배포합니다.
+구글 스프레드시트를 새로 만들고, `확장 프로그램 > Apps Script > 라이브러리(+)`에서 아래 Script ID를 입력해 라이브러리를 추가합니다.
 
-### 2. clasp으로 배포 (권장)
+```
+Script ID: 1LXA06wO7XtQmqqZ4GdnFm6w4bwzl8nrG5dhcE2qc6h0WFcxtxj-OFoc6
+```
+
+- 버전: **HEAD (개발 모드)** 선택
+- 식별자: `KIS` 로 설정
+
+### 2. 컨테이너 스크립트 추가
+
+Apps Script 편집기에서 `container/code.gs` 내용을 붙여넣고 저장합니다.
+
+### 3. clasp으로 직접 배포하는 경우 (선택)
+
+라이브러리 방식 대신 코드를 직접 시트에 배포할 수도 있습니다.
 
 ```bash
-# clasp 설치
 npm install -g @google/clasp
-
-# 로그인
 clasp login
 
-# 이 레포 클론 후 배포
 git clone https://github.com/Chokoty/kis-auto-rebalance.git
 cd kis-auto-rebalance/kis_library_public
 clasp push -f
 ```
 
-### 3. API 키 입력
+### 4. 초기 설정 실행
 
-1. 구글 시트 상단 메뉴 `📊 KIS AutoTrader > ⚙️ 설정 및 관리 > ⚙️ 초기 설정` 실행
-2. `🛡️ API 키 보안 설정`에서 한국투자증권 AppKey, AppSecret, 계좌번호 입력
-3. 정보는 구글 서버의 `UserProperties`에 암호화되어 저장됩니다
+1. 구글 시트를 새로고침하면 상단에 `📊 KIS AutoTrader` 메뉴가 생깁니다
+2. `⚙️ 설정 및 관리 > ⚙️ 초기 설정` 실행 (필요한 시트 자동 생성)
+3. `🛡️ API 키 보안 설정`에서 한국투자증권 AppKey, AppSecret, 계좌번호 입력
+4. 정보는 구글 서버의 `UserProperties`에 암호화되어 저장됩니다
 
-### 4. 포트폴리오 설정
+### 5. 포트폴리오 설정
 
-`📋 포트폴리오설정` 시트에 종목코드, 종목명, 목표비율(%)을 입력합니다. 기본 예시 포트폴리오가 제공됩니다.
+`📋 포트폴리오설정` 시트에서 종목코드, 종목명, 목표비율(%)을 수정합니다. 기본 예시 포트폴리오가 제공됩니다.
 
 ## 🛣️ 자동 리밸런싱 설정
 
