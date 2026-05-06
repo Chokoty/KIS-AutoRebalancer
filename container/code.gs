@@ -33,5 +33,9 @@ function openSecureConfigDialog()           { KIS.openSecureConfigDialog(); }
 function saveSecureConfig(data)             { KIS.saveSecureConfig(data); }
 function forceRefreshToken()                { KIS.forceRefreshToken(); }
 
+// AI 분석
+function runAIBriefing()                    { KIS.runAIBriefing(); }
+function applyAIProposedRatios(jsonStr)     { return KIS.applyAIProposedRatios(jsonStr); }
+
 // 안내
 function showUsageGuide()                   { KIS.showUsageGuide(); }

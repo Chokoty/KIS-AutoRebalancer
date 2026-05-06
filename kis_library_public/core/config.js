@@ -23,9 +23,11 @@ function getConfig() {
     profitTakingThreshold: parseFloat(sheet.getRange('B7').getValue()) || 40.0,
     targetAmount: parseFloat(sheet.getRange('B8').getValue()) || 300000000,
     targetYield: parseFloat(sheet.getRange('B9').getValue()) || 10.0,
-    isISA: sheet.getRange('B9').getValue() === 'TRUE',
-    buyFeeRate: (parseFloat(sheet.getRange('B10').getValue()) || 0) / 100,
-    sellFeeRate: (parseFloat(sheet.getRange('B11').getValue()) || 0) / 100
+    isISA: sheet.getRange('B10').getValue() === 'TRUE',
+    buyFeeRate: (parseFloat(sheet.getRange('B11').getValue()) || 0) / 100,
+    sellFeeRate: (parseFloat(sheet.getRange('B12').getValue()) || 0) / 100,
+    geminiApiKey: props.getProperty(ssId + '_GEMINI_API_KEY') || '',
+    geminiModelId: props.getProperty(ssId + '_GEMINI_MODEL_ID') || 'gemini-2.0-flash'
   };
 }
 

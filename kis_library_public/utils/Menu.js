@@ -13,6 +13,8 @@ function onOpen() {
     .addSeparator()
     .addItem('🛣️ 주간 자동 리밸런싱 (차선 유지) 활성/비활성', 'toggleHighwayLaneKeeping')
     .addSeparator()
+    .addItem('🤖 AI 시장 분석 및 비중 제안', 'runAIBriefing')
+    .addSeparator()
     .addItem('📖 기본 사용법 안내', 'showUsageGuide')
     .addSubMenu(ui.createMenu('⚙️ 설정 및 관리')
       .addItem('⚙️ 초기 설정', 'setupSheets')
