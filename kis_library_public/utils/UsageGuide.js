@@ -38,19 +38,6 @@ function showUsageGuide() {
           li {
             margin-bottom: 8px;
           }
-           .fsd-box {
-            background-color: #fff8e1;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ffca28;
-            margin-top: 15px;
-            font-size: 13.5px;
-          }
-          .fsd-title {
-            color: #f57c00;
-            font-weight: bold;
-            margin-bottom: 8px;
-          }
           strong {
             color: #202124;
           }
@@ -83,24 +70,12 @@ function showUsageGuide() {
           <li>메뉴의 <code>생활비 인출</code> &gt; <code>인출 창 열기</code>를 통해 매월 추천되는 수익 인출 금액을 확인하고, 터치 한 번으로 비율에 맞춰 자동 매도하여 현금화할 수 있습니다.</li>
         </ul>
 
-        <div class="fsd-box">
-          <div class="fsd-title">🏎️ FSD 드라이빙 모드 (AI 성향 설정)란?</div>
-          AI 브리핑 시 전략을 결정하는 위험 감수 성향입니다.
-          <ul style="margin-top: 5px;">
-            <li><strong>🍃 Chill:</strong> 원금 보존 최우선. 보수적, 안전 자산(금/달러) 위주</li>
-            <li><strong>⚖️ Standard:</strong> (기본값) 수익과 위험 방어의 적절한 균형</li>
-            <li><strong>🏃 Hurry:</strong> 시장 기회를 엿보며 적극적으로 주식 비중 확대</li>
-            <li><strong>🔥 Assertive:</strong> 단기 손실을 감내하더라도 초과 수익 강하게 추구</li>
-            <li><strong>💀 Mad Max:</strong> 가장 공격적인 투자로 리스크 무시, 수익 극대화</li>
-          </ul>
-        </div>
-
         <div style="text-align: center; margin-top: 30px;">
           <button onclick="google.script.host.close()" style="background-color: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">확인</button>
         </div>
       </body>
     </html>
   `;
-  const ui = HtmlService.createHtmlOutput(html).setWidth(650).setHeight(750).setTitle('기본 사용법 가이드');
+  const ui = HtmlService.createHtmlOutput(html).setWidth(650).setHeight(600).setTitle('기본 사용법 가이드');
   SpreadsheetApp.getUi().showModalDialog(ui, ' ');
 }
