@@ -1,0 +1,8 @@
+# clasp credentials (contains script IDs - commit only if you want them public)
+kis_library_public/.clasp.json
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
