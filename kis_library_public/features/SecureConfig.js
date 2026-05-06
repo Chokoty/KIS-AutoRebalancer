@@ -58,11 +58,10 @@ function openSecureConfigDialog() {
       <div class="form-group">
         <label>사용할 Gemini 모델</label>
         <select id="geminiModelId" style="width: 100%; padding: 8px;">
-          <option value="gemini-2.0-flash" ${config.geminiModelId === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash (최신/추천)</option>
-          <option value="gemini-1.5-flash" ${config.geminiModelId === 'gemini-1.5-flash' ? 'selected' : ''}>Gemini 1.5 Flash (속도 최적화)</option>
-          <option value="gemini-1.5-pro" ${config.geminiModelId === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro (고성능/추천)</option>
+          <option value="gemini-2.5-flash" ${config.geminiModelId === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash (최신/권장)</option>
+          <option value="gemini-2.0-flash" ${config.geminiModelId === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash (안정/대안)</option>
         </select>
-        <p class="help-text">본인의 API 키 권한에 맞는 모델을 선택하세요.</p>
+        <p class="help-text">최신 모델인 2.5 Flash 사용을 권장합니다.</p>
       </div>
       
       <div class="footer">
