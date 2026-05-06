@@ -35,44 +35,33 @@ kis_auto_rebalance/
 
 ## ⚙️ 설치 방법
 
-### 1. 구글 시트 템플릿 복사 (가장 빠름)
-아래 링크를 클릭하여 템플릿 시트의 사본을 만듭니다. 필요한 시트 구조와 메뉴가 이미 구성되어 있습니다.
+### 1. 구글 시트 템플릿 복사
+아래 링크를 클릭하여 템플릿 시트의 사본을 만듭니다. **앱 스크립트 코드와 라이브러리 설정이 이미 포함되어 있어 즉시 사용 가능합니다.**
 
 - **[📊 KIS Auto-Rebalancer 템플릿 복사하기](https://docs.google.com/spreadsheets/d/1w9oa8QCMpg9BxVuV86HA6gnho1j_IphSBOdH7zc2Hj8/copy)**
 
-### 2. 라이브러리 추가
-복사한 시트의 `확장 프로그램 > Apps Script > 라이브러리(+)`에서 아래 Script ID를 입력해 라이브러리를 추가합니다.
+> [!TIP]
+> 템플릿을 복사했다면 아래 '2. 라이브러리 및 스크립트 수동 설치' 과정은 건너뛰고 바로 **[3. 초기 설정 실행](#3-초기-설정-실행)**으로 이동하세요.
 
-```
-Script ID: 1LXA06wO7XtQmqqZ4GdnFm6w4bwzl8nrG5dhcE2qc6h0WFcxtxj-OFoc6
-```
+### 2. 라이브러리 및 스크립트 수동 설치 (선택 사항)
+직접 만든 시트에 설치하고 싶은 경우에만 아래 과정을 진행합니다.
 
-- 버전: **HEAD (개발 모드)** 선택
-- 식별자: `KIS` 로 설정
+1. **라이브러리 추가**: `확장 프로그램 > Apps Script > 라이브러리(+)`에서 아래 Script ID를 입력 (버전: `HEAD`, 식별자: `KIS`)
+   - `1LXA06wO7XtQmqqZ4GdnFm6w4bwzl8nrG5dhcE2qc6h0WFcxtxj-OFoc6`
+2. **컨테이너 스크립트**: `container/code.gs` 내용을 복사하여 앱 스크립트 편집기에 붙여넣기
 
-### 3. 컨테이너 스크립트 추가
-Apps Script 편집기에서 `container/code.gs` 내용을 붙여넣고 저장합니다.
+### 3. 초기 설정 실행
+1. 구글 시트를 새로고침하면 상단에 `📊 KIS AutoTrader` 메뉴가 생깁니다.
+2. `⚙️ 설정 및 관리 > ⚙️ 초기 설정`을 실행하여 필요한 시트 구조를 생성합니다.
+3. `🛡️ API 키 보안 설정`에서 한국투자증권 API 키와 Gemini API 키를 입력합니다.
 
-### 4. clasp으로 직접 배포하는 경우 (선택)
-라이브러리 방식 대신 코드를 직접 시트에 배포할 수도 있습니다.
-
-```bash
-npm install -g @google/clasp
-clasp login
-
-git clone https://github.com/Chokoty/kis-auto-rebalance.git
-cd kis-auto-rebalance/kis_library_public
-clasp push -f
-```
-
-### 5. 초기 설정 실행
-1. 구글 시트를 새로고침하면 상단에 `📊 KIS AutoTrader` 메뉴가 생깁니다
-2. `⚙️ 설정 및 관리 > ⚙️ 초기 설정` 실행 (필요한 시트 자동 생성)
-3. `🛡️ API 키 보안 설정`에서 한국투자증권 AppKey, AppSecret, 계좌번호 입력
-4. 정보는 구글 서버의 `UserProperties`에 암호화되어 저장됩니다
-
-### 6. 포트폴리오 설정
+### 4. 포트폴리오 설정
 `📋 포트폴리오설정` 시트에서 종목코드, 종목명, 목표비율(%)을 수정합니다. 기본 예시 포트폴리오가 제공됩니다.
+
+---
+
+> [!NOTE]
+> **개발자 참고 (clasp)**: 라이브러리 방식 대신 직접 소스 코드를 배포하고 싶다면 `kis_library_public` 폴더에서 `clasp push`를 사용할 수 있습니다.
 
 ## 🛣️ 자동 리밸런싱 설정
 
