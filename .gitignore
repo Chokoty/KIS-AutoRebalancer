@@ -1,3 +1,6 @@
+# clasp (각자의 Script ID가 들어가므로 커밋하지 않음)
+container/.clasp.json
+
 # macOS
 .DS_Store
 

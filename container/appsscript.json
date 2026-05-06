@@ -1,0 +1,13 @@
+{
+  "timeZone": "Asia/Seoul",
+  "dependencies": {
+    "libraries": [{
+      "userSymbol": "KIS",
+      "libraryId": "1LXA06wO7XtQmqqZ4GdnFm6w4bwzl8nrG5dhcE2qc6h0WFcxtxj-OFoc6",
+      "version": "0",
+      "developmentMode": true
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
