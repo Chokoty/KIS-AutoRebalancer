@@ -1,111 +1,3 @@
-// 수익실현 시트 초기 설정 (추천 인출액 추가)
-function setupWithdrawSheet(sheet) {
-  sheet.clear();
-  
-  // 헤더
-  sheet.getRange('A1:H1').merge()
-    .setValue('💰 수익 실현')
-    .setFontWeight('bold')
-    .setFontSize(16)
-    .setHorizontalAlignment('center')
-    .setBackground('#0f9d58')
-    .setFontColor('white');
-  
-  // 현재 상태
-  sheet.getRange('A3:B3').setValues([['💼 현재 총 자산', 0]]);
-  sheet.getRange('A4:B4').setValues([['💵 현재 예수금', 0]]);
-  sheet.getRange('A5:B5').setValues([['📊 보유주식 평가액', 0]]);
-  sheet.getRange('A6:B6').setValues([['📈 총 손익', 0]]);
-  sheet.getRange('A7:B7').setValues([['⏰ 조회시간', '']]);
-  
-  // 추천 인출액 섹션 (NEW)
-  sheet.getRange('D3:E3').setValues([['💡 추천 월 인출액', 0]]);
-  sheet.getRange('D4:E4').setValues([['🎯 목표 연 수익률', '8.0%']]);
-  sheet.getRange('D5:E5').setValues([['⚠️ 안전도', '계산 필요']]);
-  sheet.getRange('D6:E6').setValues([['ℹ️ 설명', '']]);
-  
-  // 인출 설정 섹션
-  sheet.getRange('A9:B9').setValues([['🎯 인출 목표 금액', 0]]);
-  sheet.getRange('A10:B10').setValues([['💰 인출 후 총 자산', 0]]);
-  sheet.getRange('A11:B11').setValues([['💵 인출 후 예수금', 0]]);
-  sheet.getRange('A12:B12').setValues([['⚠️ 상태', '입력 대기']]);
-  
-  // 스타일
-  sheet.getRange('A3:A7').setFontWeight('bold').setBackground('#f3f3f3').setHorizontalAlignment('center');
-  sheet.getRange('B3:B7').setHorizontalAlignment('right');
-  
-  sheet.getRange('D3:D6').setFontWeight('bold').setBackground('#e8f5e9').setHorizontalAlignment('center');
-  sheet.getRange('E3:E6').setHorizontalAlignment('right');
-  sheet.getRange('E4').setBackground('#ffffcc'); // 수정 가능
-  
-  sheet.getRange('A9:A12').setFontWeight('bold').setBackground('#fff3cd').setHorizontalAlignment('center');
-  sheet.getRange('B9').setBackground('#ffffcc'); // 입력 셀 강조
-  sheet.getRange('B9:B12').setHorizontalAlignment('right');
-  
-  // 매도 계획 헤더
-  sheet.getRange('A14:H14').setValues([[
-    '종목코드', '종목명', '현재보유', '현재가', '매도수량', '매도금액', '인출후보유', '비고'
-  ]])
-  .setFontWeight('bold')
-  .setBackground('#ea4335')
-  .setFontColor('white')
-  .setHorizontalAlignment('center');
-  
-  // 데이터 영역 기본값 Right 정렬
-  sheet.getRange('A15:H').setHorizontalAlignment('right');
-  
-  // 열 너비 조정
-  sheet.setColumnWidth(1, 80);
-  sheet.setColumnWidth(2, 200);
-  sheet.setColumnWidth(3, 80);
-  sheet.setColumnWidth(4, 80);
-  sheet.setColumnWidth(5, 80);
-  sheet.setColumnWidth(6, 100);
-  sheet.setColumnWidth(7, 80);
-  sheet.setColumnWidth(8, 120);
-  
-  // 설명 추가
-  sheet.getRange('E6').setValue('보수적 계산 기준').setFontSize(9).setFontColor('#666666');
-  trimExtraColumns(sheet);
-}
-
-// 추천 인출액 계산
-function calculateSafeWithdrawal(totalAssets, totalProfit, targetAnnualReturn) {
-  // 목표 연 수익률 기반 월 인출 가능액
-  const r = targetAnnualReturn / 100;
-  const monthlyRate = Math.pow(1 + r, 1/12) - 1;
-  const theoreticalMonthly = Math.floor(totalAssets * monthlyRate);
-  
-  // 안전도 판단
-  let safetyLevel = '';
-  let recommendedAmount = 0;
-  let explanation = '';
-  
-  if (totalProfit <= 0) {
-    // 손실 상태
-    safetyLevel = '❌ 손실 중';
-    recommendedAmount = 0;
-    explanation = '현재 손실 상태입니다. 인출을 권장하지 않습니다.';
-  } else if (totalProfit < theoreticalMonthly) {
-    // 수익이 있지만 이론값보다 작음
-    safetyLevel = '⚠️ 주의';
-    recommendedAmount = Math.floor(totalProfit * 0.3); // 총 수익의 30%만
-    explanation = '보수적 계산: 총 수익의 30%';
-  } else {
-    // 충분한 수익
-    safetyLevel = '✅ 안전';
-    recommendedAmount = theoreticalMonthly;
-    explanation = '목표 수익률 기준 계산';
-  }
-  
-  return {
-    recommended: recommendedAmount,
-    theoretical: theoreticalMonthly,
-    safety: safetyLevel,
-    explanation: explanation
-  };
-}
-
 /**
  * 수익 실현 창 열기 — 대시보드 시트에서 데이터 읽어 즉시 오픈 (KIS API 재호출 없음)
  */
@@ -129,7 +21,11 @@ function openWithdrawDialog() {
         var qty  = parseInt(row[3]) || 0;
         var price = parseFloat(row[4]) || 0;
         var evalAmt = parseFloat(row[5]) || 0;
-        var ratio = parseFloat(String(row[7]).replace('%','')) || 0;
+        var ratioRaw = row[7];
+        // Google Sheets auto-converts "20.00%" strings to 0.20 numbers; normalize to percentage form
+        var ratio = typeof ratioRaw === 'number'
+          ? (ratioRaw > 0 && ratioRaw <= 1 ? ratioRaw * 100 : ratioRaw)
+          : parseFloat(String(ratioRaw).replace('%','')) || 0;
         if (code && qty > 0 && price > 0 && ratio > 0) {
           holdings.push({ code: code, name: row[1], qty: qty, price: price, evalAmt: evalAmt, ratio: ratio });
         }
@@ -171,6 +67,11 @@ function openWithdrawDialog() {
 'td { padding: 4px 7px; border-bottom: 1px solid #f1f3f4; }' +
 'td.num { text-align: right; } td.sell { text-align: right; color: #ea4335; font-weight: bold; }' +
 'td.amount { text-align: right; color: #1a73e8; font-weight: bold; }' +
+'td.ratio-up { text-align: right; color: #34a853; font-weight: bold; }' +
+'td.ratio-dn { text-align: right; color: #ea4335; font-weight: bold; }' +
+'td.ratio-nc { text-align: right; color: #5f6368; }' +
+'.tbl-wrap { max-height: 220px; overflow-y: auto; border: 1px solid #f1f3f4; border-radius: 4px; margin-bottom: 10px; }' +
+'tr.cash-row td { color: #5f6368; background: #f8f9fa; font-style: italic; }' +
 '.summary { background: #f8f9fa; border-radius: 6px; padding: 10px 12px; margin-top: 10px; }' +
 '.summary-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #ececec; font-size: 13px; }' +
 '.summary-row:last-child { border: none; font-weight: bold; font-size: 14px; }' +
@@ -187,9 +88,9 @@ function openWithdrawDialog() {
 '<button class="btn btn-green" id="recBtn" onclick="useRecommended()">추천</button></div>' +
 '<div class="calc-row"><button class="btn btn-blue" id="calcBtn" onclick="calculate()" style="flex:1">&#128290; 계산하기</button>' +
 '<button class="btn btn-outline" onclick="google.script.host.close()">닫기</button></div>' +
-'<div id="planSection"><div class="section-title">&#128203; 매도 계획 (비율 유지)</div>' +
-'<table><thead><tr><th style="text-align:left">종목명</th><th>현재</th><th>매도</th><th>매도금액</th><th>잔여</th></tr></thead>' +
-'<tbody id="planTable"></tbody></table>' +
+'<div id="planSection"><div class="section-title">&#128203; 전체 비중 변화 (비율 유지)</div>' +
+'<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">종목명</th><th>현재</th><th>매도</th><th>잔여</th><th>현재%</th><th>실현후%</th></tr></thead>' +
+'<tbody id="planTable"></tbody></table></div>' +
 '<div class="summary">' +
 '<div class="summary-row"><span>총 매도 예정액</span><span id="totalSell">-</span></div>' +
 '<div class="summary-row"><span>실현 후 예수금</span><span id="cashAfter">-</span></div>' +
@@ -209,7 +110,7 @@ function openWithdrawDialog() {
 'function useRecommended(){document.getElementById("amountInput").value=d.recommended;}' +
 'function calcPlan(amount){' +
 '  var fee=d.fee; var targetTotal=d.totalEval-amount;' +
-'  var orders=[]; var totalSell=0;' +
+'  var orders=[]; var totalSell=0; var sellMap={};' +
 '  d.holdings.forEach(function(h){' +
 '    var targetAmt=targetTotal*(h.ratio/100);' +
 '    var excess=h.evalAmt-targetAmt;' +
@@ -219,13 +120,28 @@ function openWithdrawDialog() {
 '    var rawAmt=sellQty*h.price;' +
 '    var proceeds=Math.floor(rawAmt*(1-fee));' +
 '    totalSell+=proceeds;' +
+'    sellMap[h.code]={sellQty:sellQty,rawAmt:rawAmt,proceeds:proceeds};' +
 '    orders.push({name:h.name,code:h.code,currentQty:h.qty,currentPrice:h.price,sellQty:sellQty,sellAmount:rawAmt,actualProceeds:proceeds,remainingQty:h.qty-sellQty});' +
 '  });' +
 '  var available=totalSell+d.cash;' +
 '  var cashAfter=available-amount;' +
+'  var newTotal=cashAfter;' +
+'  d.holdings.forEach(function(h){var sk=sellMap[h.code]; var remQty=sk?h.qty-sk.sellQty:h.qty; newTotal+=remQty*h.price;});' +
+'  var allRows=d.holdings.map(function(h){' +
+'    var sk=sellMap[h.code]; var sellQty=sk?sk.sellQty:0; var remQty=h.qty-sellQty;' +
+'    return{name:h.name,code:h.code,currentQty:h.qty,sellQty:sellQty,remainingQty:remQty,' +
+'      sellAmount:sk?sk.rawAmt:0,' +
+'      beforeRatio:d.totalEval>0?h.evalAmt/d.totalEval*100:0,' +
+'      afterRatio:newTotal>0?remQty*h.price/newTotal*100:0,' +
+'      targetRatio:h.ratio};' +
+'  });' +
+'  var cashBeforeRatio=d.totalEval>0?d.cash/d.totalEval*100:0;' +
+'  var cashAfterRatio=newTotal>0?cashAfter/newTotal*100:0;' +
 '  var shortage=Math.max(0,amount-available);' +
 '  var surplus=Math.max(0,available-amount);' +
-'  return{orders:orders,totalSell:totalSell,cashAfter:cashAfter,shortage:shortage,surplus:surplus,statusClass:shortage>1000?"warn":"ok",withdrawAmount:amount};' +
+'  return{orders:orders,allRows:allRows,totalSell:totalSell,cashAfter:cashAfter,' +
+'    cashBeforeRatio:cashBeforeRatio,cashAfterRatio:cashAfterRatio,' +
+'    shortage:shortage,surplus:surplus,statusClass:shortage>1000?"warn":"ok",withdrawAmount:amount};' +
 '}' +
 'function calculate(){' +
 '  var amount=parseInt(document.getElementById("amountInput").value)||0;' +
@@ -234,12 +150,24 @@ function openWithdrawDialog() {
 '  planData=plan;' +
 '  document.getElementById("planSection").style.display="block";' +
 '  var tbody=document.getElementById("planTable"); tbody.innerHTML="";' +
-'  if(!plan.orders.length){tbody.innerHTML="<tr><td colspan=5 style=text-align:center;color:#5f6368;padding:8px>매도 없이 예수금으로 충당 가능</td></tr>";}' +
-'  else{plan.orders.forEach(function(o){' +
+'  function ratioClass(diff){return diff<-0.15?"ratio-dn":diff>0.15?"ratio-up":"ratio-nc";}' +
+'  plan.allRows.forEach(function(r){' +
 '    var tr=document.createElement("tr");' +
-'    tr.innerHTML="<td>"+o.name+"</td><td class=num>"+o.currentQty+"주</td><td class=sell>"+o.sellQty+"주</td><td class=amount>"+Math.round(o.sellAmount).toLocaleString()+"</td><td class=num>"+o.remainingQty+"주</td>";' +
+'    var diff=r.afterRatio-r.beforeRatio;' +
+'    var sellCell=r.sellQty>0?"<td class=sell>"+r.sellQty+"주</td>":"<td class=num style=color:#bbb>-</td>";' +
+'    var arrow=diff<-0.15?"▼":diff>0.15?"▲":"";' +
+'    tr.innerHTML="<td>"+r.name+"</td><td class=num>"+r.currentQty+"주</td>"+sellCell+"<td class=num>"+r.remainingQty+"주</td>"+' +
+'      "<td class=num>"+r.beforeRatio.toFixed(1)+"%</td>"+' +
+'      "<td class="+ratioClass(diff)+">"+r.afterRatio.toFixed(1)+"% "+arrow+"</td>";' +
 '    tbody.appendChild(tr);' +
-'  });}' +
+'  });' +
+'  var cashTr=document.createElement("tr"); cashTr.className="cash-row";' +
+'  var cd=plan.cashAfterRatio-plan.cashBeforeRatio;' +
+'  var ca=cd<-0.15?"▼":cd>0.15?"▲":"";' +
+'  cashTr.innerHTML="<td>예수금(현금)</td><td class=num colspan=3>"+Math.round(plan.cashAfter).toLocaleString()+"원</td>"+' +
+'    "<td class=num>"+plan.cashBeforeRatio.toFixed(1)+"%</td>"+' +
+'    "<td class="+ratioClass(cd)+">"+plan.cashAfterRatio.toFixed(1)+"% "+ca+"</td>";' +
+'  tbody.appendChild(cashTr);' +
 '  document.getElementById("totalSell").textContent=fmt(plan.totalSell);' +
 '  document.getElementById("cashAfter").textContent=fmt(plan.cashAfter);' +
 '  var st=document.getElementById("statusLabel");' +
@@ -260,83 +188,9 @@ function openWithdrawDialog() {
 '    .executeWithdrawPlan(planData);' +
 '}' +
 '<\/script></body></html>'
-  ).setWidth(460).setHeight(560).setTitle('💰 수익 실현');
+  ).setWidth(520).setHeight(660).setTitle('💰 수익 실현');
 
   SpreadsheetApp.getUi().showModalDialog(html, ' ');
-}
-
-/**
- * 다이얼로그용: 현재 자산 현황 + 추천 인출액 반환
- */
-function getWithdrawData() {
-  const balance  = getBalance();
-  const holdings = getHoldings();
-  const totalProfit = holdings.reduce((sum, h) => sum + h.profit, 0);
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dash = ss.getSheetByName('📊 대시보드');
-  let targetReturn = 8.0;
-  if (dash) {
-    const v = dash.getRange('H6').getValue();
-    if (v && typeof v === 'number') targetReturn = v < 1 ? v * 100 : v;
-  }
-
-  const w = calculateSafeWithdrawal(balance.totalEval, totalProfit, targetReturn);
-  return { totalEval: balance.totalEval, cash: balance.cash, profit: totalProfit, recommended: w.recommended, safety: w.safety };
-}
-
-/**
- * 다이얼로그용: 비율 유지 매도 계획 계산 (대시보드 시트에서 읽기 — KIS API 재호출 없음)
- */
-function calculateWithdrawPlan(amount) {
-  const ss     = SpreadsheetApp.getActiveSpreadsheet();
-  const dash   = ss.getSheetByName('📊 대시보드');
-  const config = getConfig();
-
-  if (!dash) throw new Error('대시보드 시트를 찾을 수 없습니다. 먼저 새로고침하세요.');
-
-  const totalEval = parseFloat(dash.getRange('B3').getValue()) || 0;
-  const cash      = parseFloat(dash.getRange('B4').getValue()) || 0;
-  const targetTotal = totalEval - amount;
-
-  const lastRow = dash.getLastRow();
-  const orders  = [];
-  let totalSell = 0;
-
-  if (lastRow >= 9) {
-    // 대시보드 테이블: col1=코드, col2=명, col4=보유수량, col5=현재가, col6=평가액, col8=목표비율
-    const rows = dash.getRange(9, 1, lastRow - 8, 8).getValues();
-    rows.forEach(function(row) {
-      const code        = String(row[0]).trim();
-      const name        = row[1];
-      const quantity    = parseInt(row[3]) || 0;
-      const price       = parseFloat(row[4]) || 0;
-      const evalAmount  = parseFloat(row[5]) || 0;
-      const targetRatio = parseFloat(String(row[7]).replace('%', '')) || 0;
-
-      if (!code || quantity <= 0 || price <= 0 || targetRatio <= 0) return;
-
-      const targetAmt = targetTotal * (targetRatio / 100);
-      const excess    = evalAmount - targetAmt;
-      if (excess <= 0) return;
-
-      const sellQty = Math.min(quantity, Math.ceil(excess / (price * (1 - config.sellFeeRate))));
-      if (sellQty <= 0) return;
-
-      const rawAmt   = sellQty * price;
-      const proceeds = Math.floor(rawAmt * (1 - config.sellFeeRate));
-      totalSell += proceeds;
-
-      orders.push({ code, name, currentQty: quantity, currentPrice: price, sellQty, sellAmount: rawAmt, actualProceeds: proceeds, remainingQty: quantity - sellQty });
-    });
-  }
-
-  const available = totalSell + cash;
-  const cashAfter = available - amount;
-  const shortage  = Math.max(0, amount - available);
-  const surplus   = Math.max(0, available - amount);
-
-  return { orders, totalSell, cashAfter, shortage, surplus, statusClass: shortage > 1000 ? 'warn' : 'ok', withdrawAmount: amount };
 }
 
 /**
@@ -344,18 +198,47 @@ function calculateWithdrawPlan(amount) {
  */
 function executeWithdrawPlan(planData) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const logSheet = ss.getSheetByName('📝 거래내역');
+  const logSheet    = ss.getSheetByName('📝 거래내역');
+  const profitSheet = ss.getSheetByName('📝 수익실현기록');
   let successCount = 0, failCount = 0;
+
+  // 대시보드에서 종목별 평균단가 수집 (col 15 = avgPrice)
+  const avgPriceMap = {};
+  const dash = ss.getSheetByName('📊 대시보드');
+  if (dash && dash.getLastRow() >= 9) {
+    dash.getRange(9, 1, dash.getLastRow() - 8, 15).getValues().forEach(function(row) {
+      const code = String(row[0]).trim();
+      if (code) avgPriceMap[code] = parseFloat(row[14]) || 0;
+    });
+  }
 
   planData.orders.forEach(order => {
     const result = placeOrder(order.code, 'sell', order.sellQty, 0);
-    if (result.success) successCount++; else failCount++;
+    if (result.success) {
+      successCount++;
+      // 수익실현기록 시트에 기록
+      if (profitSheet) {
+        const avgPrice = avgPriceMap[order.code] || 0;
+        const realizedProfit = avgPrice > 0 ? (order.currentPrice - avgPrice) * order.sellQty : 0;
+        const lastRow = profitSheet.getLastRow();
+        const cumulative = realizedProfit + (lastRow >= 2 ? (parseFloat(profitSheet.getRange(lastRow, 8).getValue()) || 0) : 0);
+        profitSheet.appendRow([
+          new Date(), order.name, '매도(수익실현)',
+          order.sellQty, order.currentPrice, order.sellQty * order.currentPrice,
+          Math.round(realizedProfit), Math.round(cumulative)
+        ]);
+        trimExtraColumns(profitSheet, 8);
+      }
+    } else {
+      failCount++;
+    }
     if (logSheet) {
       logSheet.appendRow([
         new Date(), '매도(수익실현)', order.code, order.name,
         order.sellQty, order.currentPrice, order.sellQty * order.currentPrice,
         result.success ? '성공' : '실패', result.message || ''
       ]);
+      trimExtraColumns(logSheet, 9);
     }
     Utilities.sleep(300);
   });
