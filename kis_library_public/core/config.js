@@ -7,27 +7,34 @@ function getConfig() {
   
   // 보안 저장소(UserProperties) 우선 조회, 없으면 시트에서 조회
   // 시트별 격리를 위해 Spreadsheet ID를 접두어로 사용
-  const secureAppKey = props.getProperty(ssId + '_KIS_APP_KEY');
-  const secureAppSecret = props.getProperty(ssId + '_KIS_APP_SECRET');
-  const secureAccount = props.getProperty(ssId + '_KIS_ACCOUNT');
+  const secureAppKey      = props.getProperty(ssId + '_KIS_APP_KEY');
+  const secureAppSecret   = props.getProperty(ssId + '_KIS_APP_SECRET');
+  const secureAccount     = props.getProperty(ssId + '_KIS_ACCOUNT');
+  const secureGeminiKey   = props.getProperty(ssId + '_GEMINI_API_KEY');
+  const secureGeminiModel = props.getProperty(ssId + '_GEMINI_MODEL_ID');
+
+  // B7: 계좌 종류 — '일반' | 'ISA' | '모의'
+  const accountType = sheet.getRange('B7').getValue().toString().trim() || '일반';
+  const isMock = accountType === '모의';
 
   return {
     appKey: (secureAppKey || sheet.getRange('B2').getValue().toString()).trim(),
     appSecret: (secureAppSecret || sheet.getRange('B3').getValue().toString()).trim(),
     account: (secureAccount || sheet.getRange('B4').getValue().toString()).trim(),
-    isMock: sheet.getRange('B5').getValue() === 'TRUE',
-    baseUrl: sheet.getRange('B5').getValue() === 'TRUE'
+    accountType: accountType,
+    isMock: isMock,
+    baseUrl: isMock
       ? 'https://openapivts.koreainvestment.com:29443'
       : 'https://openapi.koreainvestment.com:9443',
-    rebalanceTolerance: parseFloat(sheet.getRange('B6').getValue()) || 2.0,
-    profitTakingThreshold: parseFloat(sheet.getRange('B7').getValue()) || 40.0,
-    targetAmount: parseFloat(sheet.getRange('B8').getValue()) || 300000000,
-    targetYield: parseFloat(sheet.getRange('B9').getValue()) || 10.0,
-    isISA: sheet.getRange('B10').getValue() === 'TRUE',
-    buyFeeRate: (parseFloat(sheet.getRange('B11').getValue()) || 0) / 100,
-    sellFeeRate: (parseFloat(sheet.getRange('B12').getValue()) || 0) / 100,
-    geminiApiKey: props.getProperty(ssId + '_GEMINI_API_KEY') || '',
-    geminiModelId: props.getProperty(ssId + '_GEMINI_MODEL_ID') || 'gemini-2.0-flash'
+    geminiApiKey: (secureGeminiKey || sheet.getRange('B5').getValue().toString()).trim(),
+    geminiModelId: secureGeminiModel || props.getProperty('GEMINI_MODEL_ID') || 'gemini-2.0-flash',
+    isISA: accountType === 'ISA',
+    rebalanceTolerance: parseFloat(sheet.getRange('B8').getValue()) || 2.0,
+    profitTakingThreshold: parseFloat(sheet.getRange('B9').getValue()) || 40.0,
+    targetYield: parseFloat(sheet.getRange('B10').getValue()) || 10.0,
+    // KIS 온라인 기준 고정 수수료 (ETF 기준, 증권거래세 없음)
+    buyFeeRate: 0.00015,
+    sellFeeRate: 0.00015
   };
 }
 

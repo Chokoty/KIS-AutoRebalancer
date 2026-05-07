@@ -244,14 +244,14 @@ function prepareTemplateSheet() {
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. 설정 시트 초기화 (B2:B5, B10 값 지우기)
+  // 1. 설정 시트 초기화 (민감정보 삭제)
   const configSheet = ss.getSheetByName('⚙️ 설정');
   if (configSheet) {
     configSheet.getRange('B2').setValue('');
     configSheet.getRange('B3').setValue('');
     configSheet.getRange('B4').setValue('12345678-01');
-    configSheet.getRange('B5').setValue('FALSE');
-    configSheet.getRange('B10').setValue('');
+    configSheet.getRange('B5').setValue('');   // Gemini API Key
+    configSheet.getRange('B7').setValue('일반'); // 계좌 종류
   }
 
   // 2. 기록 시트 내용 삭제 (헤더는 남김)
@@ -291,20 +291,7 @@ function prepareTemplateSheet() {
     accountSheet.getRange('B6').setValue('0.00%');
   }
   
-  // 5. 추천 인출 시트 초기화
-  const withdrawSheet = ss.getSheetByName('💰 생활비 인출');
-  if (withdrawSheet) {
-    withdrawSheet.getRange('B3:B6').setValue(0);
-    withdrawSheet.getRange('E3:E4').setValue(0);
-    withdrawSheet.getRange('E5:E6').setValue('');
-    withdrawSheet.getRange('B9:B11').setValue(0);
-    withdrawSheet.getRange('B12').setValue('입력 대기');
-    
-    const lastRow = withdrawSheet.getLastRow();
-    if (lastRow >= 15) {
-       withdrawSheet.getRange(15, 1, lastRow - 14, 8).clearContent();
-    }
-  }
+  // 5. (생활비 인출 시트 제거됨 — 수익 실현은 다이얼로그로 처리)
 
   // 6. 모든 백그라운드 트리거 삭제
   const triggers = ScriptApp.getProjectTriggers();

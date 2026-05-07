@@ -119,6 +119,6 @@ function saveSecureConfig(data) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('⚙️ 설정');
   if (sheet) {
     sheet.getRange('B2:B4').setValue('🛡️ 보안 저장됨 (개인 설정)');
-    sheet.getRange('B10').setValue('🛡️ 보안 저장됨 (개인 설정)');
+    sheet.getRange('B5').setValue('🛡️ 보안 저장됨 (개인 설정)');  // Gemini API Key
   }
 }

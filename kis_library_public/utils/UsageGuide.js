@@ -65,9 +65,22 @@ function showUsageGuide() {
           <li><strong>🤖 AI 자율 포트폴리오 관리:</strong> 매일 AI가 알아서 시장을 분석하고 비중을 조절하며 자동 매매를 수행합니다.</li>
         </ul>
 
-        <div class="section-title">4. 💰 생활비 인출 (수익 실현)</div>
+        <div class="section-title">4. 💰 수익 실현</div>
         <ul>
-          <li>메뉴의 <code>생활비 인출</code> &gt; <code>인출 창 열기</code>를 통해 매월 추천되는 수익 인출 금액을 확인하고, 터치 한 번으로 비율에 맞춰 자동 매도하여 현금화할 수 있습니다.</li>
+          <li>메뉴의 <code>수익 실현 창 열기</code>를 통해 원하는 금액을 입력하면 보유 비중에 비례하여 자동으로 종목별 매도 수량을 계산해 줍니다.</li>
+          <li>매도 후 인출 금액은 <strong>2주간 리밸런싱 예수금에서 보호</strong>됩니다 (실수령 전 재매수 방지).</li>
+        </ul>
+
+        <div class="section-title">5. 📐 리밸런싱 계산 방식</div>
+        <ul>
+          <li><strong>임계치 기준:</strong> 현재 비중이 목표 비중과 <code>리밸런싱 임계치(%)</code> 이상 차이날 때만 주문이 발생합니다. (기본 2%p)</li>
+          <li><strong>매도 우선:</strong> 초과 종목을 먼저 매도하여 현금을 확보한 뒤, 부족 종목을 매수합니다.</li>
+          <li><strong>수수료 포함 계산:</strong> 모든 매매 계산에 KIS 온라인 기준 수수료가 자동 반영됩니다.
+            <ul style="margin-top: 4px;">
+              <li>매수/매도: <strong>0.015%</strong> (ETF 기준, 증권거래세 면제)</li>
+            </ul>
+          </li>
+          <li><strong>수익실현 임계치:</strong> 특정 종목의 수익률이 설정값 이상일 때 AI 브리핑 시 해당 종목의 비중 축소를 우선 고려합니다.</li>
         </ul>
 
         <div style="text-align: center; margin-top: 30px;">
@@ -76,6 +89,6 @@ function showUsageGuide() {
       </body>
     </html>
   `;
-  const ui = HtmlService.createHtmlOutput(html).setWidth(650).setHeight(600).setTitle('기본 사용법 가이드');
+  const ui = HtmlService.createHtmlOutput(html).setWidth(650).setHeight(750).setTitle('기본 사용법 가이드');
   SpreadsheetApp.getUi().showModalDialog(ui, ' ');
 }

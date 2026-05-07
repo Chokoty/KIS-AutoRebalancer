@@ -1,8 +1,10 @@
 /**
- * 수익 실현 창 열기 — 대시보드 시트에서 데이터 읽어 즉시 오픈 (KIS API 재호출 없음)
+ * 수익 실현 창 열기 — 대시보드를 새로고침한 뒤 데이터 읽어 오픈
  */
 function openWithdrawDialog() {
   const ss   = SpreadsheetApp.getActiveSpreadsheet();
+  ss.toast('최신 데이터로 업데이트 중...', '⏳ 처리 중', -1);
+  updateDashboard();
   const dash = ss.getSheetByName('📊 대시보드');
   var totalEval = 0, cash = 0, profit = 0, recommended = 0;
   var holdings = [];

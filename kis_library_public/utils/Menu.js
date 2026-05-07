@@ -58,32 +58,44 @@ function setupSheets() {
 
   // 1. 설정 시트
   let sheet = ss.getSheetByName('⚙️ 설정');
-  let lastIsMock = 'FALSE';
+  let lastAccountType = '일반';
 
   if (sheet) {
-    const existingValues = sheet.getRange('B4:B5').getValues();
-    lastIsMock = existingValues[1][0] || 'FALSE';
+    const existingValues = sheet.getRange('B2:B7').getValues();
+    // B7(index 5): 계좌 종류, 기존 TRUE/FALSE 마이그레이션
+    const raw = String(existingValues[5][0] || '');
+    if (raw === 'TRUE') lastAccountType = '모의';
+    else if (['일반', 'ISA', '모의'].includes(raw)) lastAccountType = raw;
+    else lastAccountType = '일반';
   } else {
     sheet = ss.insertSheet('⚙️ 설정');
   }
 
   sheet.clear();
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearDataValidations();
   sheet.getRange('A1').setValue('KIS API 설정').setFontWeight('bold').setFontSize(14).setHorizontalAlignment('center');
-  sheet.getRange('A2:B12').setValues([
-    ['APP KEY', '🛡️ 보안 저장됨'],
-    ['APP SECRET', '🛡️ 보안 저장됨'],
-    ['계좌번호', '🛡️ 보안 저장됨'],
-    ['모의투자', lastIsMock.toString().toUpperCase()],
-    ['리밸런싱 임계치 (%)', 2.0],
-    ['수익실현 임계치 (%)', 40.0],
-    ['최종 목표 금액 (원)', 300000000],
-    ['연 목표 수익률 (%)', 10.0],
-    ['ISA 계좌 여부 (TRUE/FALSE)', 'FALSE'],
-    ['매수 수수료율 (%)', 0.015],
-    ['매도 제비용율 (%)', 0.215]
+  sheet.getRange('A2:B10').setValues([
+    ['APP KEY',                      '🛡️ 보안 저장됨'],
+    ['APP SECRET',                   '🛡️ 보안 저장됨'],
+    ['계좌번호',                     '🛡️ 보안 저장됨'],
+    ['Gemini API Key',               '🛡️ 보안 저장됨'],
+    ['API 키 발급처',                'https://aistudio.google.com/app/apikey'],
+    ['계좌 종류 (일반/ISA/모의)',    lastAccountType],
+    ['리밸런싱 임계치 (%)',           2.0],
+    ['수익실현 임계치 (%)',           40.0],
+    ['연 목표 수익률 (%)',            10.0]
   ]);
-  sheet.getRange('A2:A12').setHorizontalAlignment('center');
-  sheet.getRange('B2:B12').setHorizontalAlignment('right');
+  sheet.getRange('A2:A10').setHorizontalAlignment('center');
+  sheet.getRange('B2:B10').setHorizontalAlignment('right');
+  sheet.getRange('B6').setFontColor('#1a73e8').setFontLine('underline');
+
+  // 계좌 종류 드롭다운
+  const accountRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['일반', 'ISA', '모의'], true)
+    .setAllowInvalid(false)
+    .build();
+  sheet.getRange('B7').setDataValidation(accountRule);
+
   trimExtraColumns(sheet);
 
   // 2. 대시보드 시트
