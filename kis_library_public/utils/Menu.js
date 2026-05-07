@@ -141,10 +141,7 @@ function setupSheets() {
   sheet.getRange('A3:D').setHorizontalAlignment('right');
   trimExtraColumns(sheet);
 
-  // 5. 수익실현 시트
-  sheet = ss.getSheetByName('💰 수익실현');
-  if (!sheet) sheet = ss.insertSheet('💰 수익실현');
-  setupWithdrawSheet(sheet);
+  // 5. (수익실현 시트 제거됨 — 수익 실현은 다이얼로그로 처리)
 
   // 6. 거래내역 시트
   setupTradeHistorySheet();
