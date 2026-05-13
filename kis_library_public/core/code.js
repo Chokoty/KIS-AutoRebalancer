@@ -12,13 +12,17 @@ function getTargetPortfolio() {
   for (let i = 3; i <= lastRow; i++) {
     const code = sheet.getRange(i, 1).getValue().toString().trim();
     const name = sheet.getRange(i, 2).getValue();
-    const ratio = parseFloat(sheet.getRange(i, 3).getValue());
-    const type = sheet.getRange(i, 4).getValue();
+    const ratio = parseFloat(sheet.getRange(i, 4).getValue()); // D: 운용비율
+    const type = sheet.getRange(i, 5).getValue(); // E: 유형
+    const baseRatioVal = sheet.getRange(i, 3).getValue(); // C: 기준비율
+    const initialRatio = (typeof baseRatioVal === 'number' && baseRatioVal > 0)
+      ? baseRatioVal : ratio;
 
     if (code && ratio > 0 && name !== '현금') {
       portfolio[code] = {
         name: name,
         ratio: ratio,
+        initialRatio: initialRatio,
         type: type
       };
     }
@@ -91,7 +95,7 @@ function executeRebalanceAutomated() {
       const lastRow = portfolioSheet.getLastRow();
       for (let i = 3; i <= lastRow; i++) {
         if (portfolioSheet.getRange(i, 2).getValue() === '현금') {
-          targetCashRatio = parseFloat(portfolioSheet.getRange(i, 3).getValue()) || 5;
+          targetCashRatio = parseFloat(portfolioSheet.getRange(i, 4).getValue()) || 5; // D: 운용비율
           break;
         }
       }

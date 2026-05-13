@@ -32,10 +32,25 @@ function setupSheets()                      { KIS.setupSheets(); }
 function openSecureConfigDialog()           { KIS.openSecureConfigDialog(); }
 function saveSecureConfig(data)             { KIS.saveSecureConfig(data); }
 function forceRefreshToken()                { KIS.forceRefreshToken(); }
+function addInitialRatiosColumn()           { KIS.addInitialRatiosColumn(); }
 
 // AI 분석
 function runAIBriefing()                    { KIS.runAIBriefing(); }
+function openAIQuickQuestion()              { KIS.openAIQuickQuestion(); }
+function runAIQuickQuestion(q)              { return KIS.runAIQuickQuestion(q); }
 function applyAIProposedRatios(jsonStr)     { return KIS.applyAIProposedRatios(jsonStr); }
+function applyAIProposedRatiosManual(js)    { return KIS.applyAIProposedRatiosManual(js); }
+function applyLatestRecommendation()        { KIS.applyLatestRecommendation(); }
+function openAIPromptSettings()             { KIS.openAIPromptSettings(); }
+function saveSystemPrompt(p)               { return KIS.saveSystemPrompt(p); }
+function resetSystemPrompt()               { KIS.resetSystemPrompt(); }
+function unlockRatioChange()               { KIS.unlockRatioChange(); }
+
+// 포트폴리오 관리
+function openPortfolioManagerDialog()      { KIS.openPortfolioManagerDialog(); }
+function searchStockByCode(code)           { return KIS.searchStockByCode(code); }
+function savePortfolioSettings(rows)       { return KIS.savePortfolioSettings(rows); }
 
 // 안내
-function showUsageGuide()                   { KIS.showUsageGuide(); }
+function showUsageGuide()                  { KIS.showUsageGuide(); }
+function showVersionHistory()              { KIS.showVersionHistory(); }

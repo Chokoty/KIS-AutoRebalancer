@@ -76,7 +76,7 @@ function getBalance() {
   
   const params = {
     'CANO': config.account.split('-')[0],
-    'ACNT_PRDT_CD': config.account.split('-')[1],
+    'ACNT_PRDT_CD': config.account.split('-')[1] || '01',
     'AFHR_FLPR_YN': 'N',
     'OFL_YN': '',
     'INQR_DVSN': '01',
@@ -130,7 +130,7 @@ function getHoldings() {
   
   const params = {
     'CANO': config.account.split('-')[0],
-    'ACNT_PRDT_CD': config.account.split('-')[1],
+    'ACNT_PRDT_CD': config.account.split('-')[1] || '01',
     'AFHR_FLPR_YN': 'N',
     'OFL_YN': '',
     'INQR_DVSN': '01',
@@ -239,7 +239,7 @@ function placeOrder(stockCode, orderType, quantity, price = 0) {
   
   const payload = {
     'CANO': config.account.split('-')[0],
-    'ACNT_PRDT_CD': config.account.split('-')[1],
+    'ACNT_PRDT_CD': config.account.split('-')[1] || '01',
     'PDNO': stockCode,
     'ORD_DVSN': price > 0 ? '00' : '01', // 00: 지정가, 01: 시장가
     'ORD_QTY': quantity.toString(),

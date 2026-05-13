@@ -10,8 +10,19 @@ function setupDashboardSheet(sheet) {
     .setHorizontalAlignment('center')
     .setBackground('#4285f4')
     .setFontColor('white');
-  
-  sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
+
+  // 업데이트 알림 배너
+  const updateMsg = (typeof checkVersionUpdate === 'function') ? checkVersionUpdate() : null;
+  if (updateMsg) {
+    sheet.getRange('A2:N2').merge()
+      .setValue(updateMsg)
+      .setFontWeight('bold')
+      .setFontColor('white')
+      .setBackground('#ea4335')
+      .setHorizontalAlignment('center');
+  } else {
+    sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
+  }
   
   // 요약 정보 라벨 (A열)
   sheet.getRange('A3:A7').setValues([
@@ -186,12 +197,10 @@ function updateDashboard() {
     // 5-1. 주행 상태 실제 트리거 확인 및 동기화
     const props = PropertiesService.getScriptProperties();
     const triggers = ScriptApp.getProjectTriggers();
-    // 차선유지는 정기 리밸런싱(scheduledBiWeeklyRebalance)을 의미함
     const hasHighwayTrigger = triggers.some(t => t.getHandlerFunction() === 'scheduledBiWeeklyRebalance');
-    const laneKeepingStatus = hasHighwayTrigger ? 'ON' : 'OFF';
     props.setProperty('HIGHWAY_LANE_KEEPING', hasHighwayTrigger ? 'TRUE' : 'FALSE');
 
-    const statusText = `차선유지:${laneKeepingStatus}`;
+    const statusText = `차선유지:${hasHighwayTrigger ? 'ON' : 'OFF'}`;
     const statusCell = sheet.getRange('B7');
     statusCell.setValue(statusText);
     statusCell.setFontColor(hasHighwayTrigger ? '#137333' : '#5f6368').setFontWeight('bold');
@@ -221,7 +230,7 @@ function updateDashboard() {
       const lastRow = portfolioSheet.getLastRow();
       for (let i = 3; i <= lastRow; i++) {
         if (portfolioSheet.getRange(i, 2).getValue() === '현금') {
-          targetCashRatio = parseFloat(portfolioSheet.getRange(i, 3).getValue()) || 5;
+          targetCashRatio = parseFloat(portfolioSheet.getRange(i, 4).getValue()) || 5; // D: 운용비율
           break;
         }
       }
