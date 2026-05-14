@@ -647,6 +647,9 @@ function runAIQuickQuestion(question, includeData) {
 function runAIQuickQuestionMultiTurn(messages, inclData) {
   const config = getConfig();
   if (!config.geminiApiKey) throw new Error('Gemini API Key가 설정되지 않았습니다.');
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    throw new Error('메시지 배열이 비어있거나 유효하지 않습니다.');
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModelId}:generateContent?key=${config.geminiApiKey}`;
 
@@ -661,6 +664,9 @@ function runAIQuickQuestionMultiTurn(messages, inclData) {
     }
     return { role: msg.role, parts: [{ text: text }] };
   });
+  if (!contents[0] || contents[0].role !== 'user') {
+    throw new Error('첫 번째 메시지는 반드시 사용자(role: user) 메시지여야 합니다.');
+  }
 
   const payload = {
     system_instruction: { parts: [{ text: systemContext }] },
