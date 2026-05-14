@@ -37,7 +37,8 @@ function addInitialRatiosColumn()           { KIS.addInitialRatiosColumn(); }
 // AI 분석
 function runAIBriefing()                    { KIS.runAIBriefing(); }
 function openAIQuickQuestion()              { KIS.openAIQuickQuestion(); }
-function runAIQuickQuestion(q)              { return KIS.runAIQuickQuestion(q); }
+function runAIQuickQuestion(q, inclData)              { return KIS.runAIQuickQuestion(q, inclData); }
+function runAIQuickQuestionMultiTurn(msgs, inclData)  { return KIS.runAIQuickQuestionMultiTurn(msgs, inclData); }
 function applyAIProposedRatios(jsonStr)     { return KIS.applyAIProposedRatios(jsonStr); }
 function applyAIProposedRatiosManual(js)    { return KIS.applyAIProposedRatiosManual(js); }
 function applyLatestRecommendation()        { KIS.applyLatestRecommendation(); }
