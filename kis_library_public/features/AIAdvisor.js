@@ -621,7 +621,7 @@ function send(){
     })
     .withFailureHandler(function(e){
       var el=document.getElementById(lid);if(el)el.remove();
-      hist.pop();btn.disabled=false;btn.textContent='💬 전송';alert('오류: '+e.message);
+      hist.pop();document.getElementById('followQ').value=q;btn.disabled=false;btn.textContent='💬 전송';alert('오류: '+e.message);
     })
     .runAIQuickQuestionMultiTurn(msgs,inclFlag);
 }
