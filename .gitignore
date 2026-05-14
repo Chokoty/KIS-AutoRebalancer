@@ -1,6 +1,9 @@
 # clasp (각자의 Script ID가 들어가므로 커밋하지 않음)
 container/.clasp.json
 
+# Superpowers 플랜/스펙 (내부 작업 문서)
+docs/superpowers/
+
 # macOS
 .DS_Store
 
