@@ -239,15 +239,22 @@ function runAIBriefing(customPrompt) {
     Utilities.sleep(2000);
   }
 
+  // 당일 추천 이미 존재하면 교체 여부 확인
+  if (hasTodayRecommendation()) {
+    const ui = SpreadsheetApp.getUi();
+    const res = ui.alert('⚠️ 오늘 이미 AI 추천이 있습니다', '다시 실행하면 오늘 추천 내역을 교체합니다.\n계속하시겠습니까?', ui.ButtonSet.YES_NO);
+    if (res !== ui.Button.YES) return;
+  }
+
   ss.toast('Gemini AI가 포트폴리오와 시장 뉴스를 분석 중입니다...', '🤖 AI 분석 시작', -1);
 
   try {
     const dashState = getDashboardStateForAI();
     const result = getGeminiAnalysis(config, dashState, customPrompt);
 
-    // 추천 내역을 비중변경이력에 기록
+    // 당일 기존 추천 삭제 후 새 추천 기록
     if (result.json && result.json.ratios) {
-      try { recordAIRatios(result.json, '추천'); } catch (e) { Logger.log('추천 기록 실패: ' + e.message); }
+      try { deleteTodayRecommendations(); recordAIRatios(result.json, '추천'); } catch (e) { Logger.log('추천 기록 실패: ' + e.message); }
     }
 
     ss.toast('분석이 완료되었습니다.', '✅', 2);
@@ -867,6 +874,36 @@ function recordAIRatios(data, status) {
     historySheet.getRange(startRow, 1, rows.length, 8).setValues(rows);
   }
   trimExtraColumns(historySheet, 8);
+}
+
+function hasTodayRecommendation() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('📝 비중변경이력');
+  if (!sheet || sheet.getLastRow() < 2) return false;
+  const tz = Session.getScriptTimeZone();
+  const todayStr = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+  return data.some(row => {
+    if (!row[0]) return false;
+    return Utilities.formatDate(new Date(row[0]), tz, 'yyyy-MM-dd') === todayStr && String(row[7]).trim() === '추천';
+  });
+}
+
+function deleteTodayRecommendations() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('📝 비중변경이력');
+  if (!sheet || sheet.getLastRow() < 2) return;
+  const tz = Session.getScriptTimeZone();
+  const todayStr = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+  const toDelete = [];
+  data.forEach((row, idx) => {
+    if (!row[0]) return;
+    if (Utilities.formatDate(new Date(row[0]), tz, 'yyyy-MM-dd') === todayStr && String(row[7]).trim() === '추천') {
+      toDelete.push(idx + 2);
+    }
+  });
+  for (let i = toDelete.length - 1; i >= 0; i--) sheet.deleteRow(toDelete[i]);
 }
 
 // ─────────────────────────────────────────────────────────────
