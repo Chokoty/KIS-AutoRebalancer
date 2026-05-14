@@ -631,7 +631,7 @@ function bubble(role,text,id){
   d.innerHTML='<div class="chat-lbl">'+(role==='user'?'나':'🤖 AI')+'</div><div class="chat-txt">'+esc(text)+'</div>';
   log.appendChild(d);
 }
-function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>');}
 function scrollBot(){var l=document.getElementById('chatLog');l.scrollTop=l.scrollHeight;}
 <\/script></body></html>`;
   SpreadsheetApp.getUi().showModelessDialog(
