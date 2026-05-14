@@ -250,6 +250,7 @@ function runAIBriefing(customPrompt) {
       try { recordAIRatios(result.json, '추천'); } catch (e) { Logger.log('추천 기록 실패: ' + e.message); }
     }
 
+    ss.toast('', '', 1); // 분석 중 토스트 닫기
     showAIBriefingOutput(result.text, result.json);
   } catch (e) {
     Logger.log('AI 분석 오류: ' + e.toString());
