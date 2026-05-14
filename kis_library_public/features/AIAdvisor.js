@@ -593,7 +593,7 @@ function ask(){
   google.script.run
     .withSuccessHandler(function(r){hist.push({role:'model',text:r});showChat();})
     .withFailureHandler(function(e){btn.disabled=false;btn.textContent='💬 질문하기';alert('오류: '+e.message);})
-    .runAIQuickQuestionMultiTurn(hist,inclFlag);
+    .runAIQuickQuestion(hist,inclFlag);
 }
 function showChat(){
   document.getElementById('inputSection').style.display='none';
@@ -623,7 +623,7 @@ function send(){
       var el=document.getElementById(lid);if(el)el.remove();
       hist.pop();document.getElementById('followQ').value=q;btn.disabled=false;btn.textContent='💬 전송';alert('오류: '+e.message);
     })
-    .runAIQuickQuestionMultiTurn(msgs,inclFlag);
+    .runAIQuickQuestion(msgs,inclFlag);
 }
 function bubble(role,text,id){
   var log=document.getElementById('chatLog'),d=document.createElement('div');
@@ -642,8 +642,13 @@ function scrollBot(){var l=document.getElementById('chatLog');l.scrollTop=l.scro
 
 /**
  * AI 빠른 질문 처리 (서버 사이드)
+ * question이 배열인 경우 멀티턴으로 처리 (컨테이너 업데이트 없이도 동작)
  */
 function runAIQuickQuestion(question, includeData) {
+  if (Array.isArray(question)) {
+    return runAIQuickQuestionMultiTurn(question, includeData);
+  }
+
   const config = getConfig();
   if (!config.geminiApiKey) throw new Error('Gemini API Key가 설정되지 않았습니다.');
 
