@@ -628,10 +628,21 @@ function send(){
 function bubble(role,text,id){
   var log=document.getElementById('chatLog'),d=document.createElement('div');
   d.className=role==='user'?'chat-user':'chat-ai';if(id)d.id=id;
-  d.innerHTML='<div class="chat-lbl">'+(role==='user'?'나':'🤖 AI')+'</div><div class="chat-txt">'+esc(text)+'</div>';
+  d.innerHTML='<div class="chat-lbl">'+(role==='user'?'나':'🤖 AI')+'</div><div class="chat-txt">'+(role==='user'?esc(text):md(text))+'</div>';
   log.appendChild(d);
 }
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>');}
+function md(t){
+  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t=t.replace(/\\*\\*([^*]+)\\*\\*/g,'<strong>$1</strong>');
+  var lines=t.split('\\n');
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i];
+    if(/^#{1,3}\\s+/.test(l)){lines[i]='<strong>'+l.replace(/^#+\\s+/,'')+'</strong>';}
+    else if(/^\\*\\s+/.test(l)){lines[i]='• '+l.replace(/^\\*\\s+/,'');}
+    else if(/^-\\s+/.test(l)){lines[i]='• '+l.replace(/^-\\s+/,'');}
+  }
+  return lines.join('<br>');}
 function scrollBot(){var l=document.getElementById('chatLog');l.scrollTop=l.scrollHeight;}
 <\/script></body></html>`;
   SpreadsheetApp.getUi().showModelessDialog(
