@@ -528,7 +528,7 @@ ${applyBtn}
 // ─────────────────────────────────────────────────────────────
 
 /**
- * AI 빠른 질문 팝업 — 짧은 질문에 즉시 답변
+ * AI 빠른 질문 팝업 — 멀티턴 채팅 지원
  */
 function openAIQuickQuestion() {
   const config = getConfig();
@@ -538,71 +538,104 @@ function openAIQuickQuestion() {
   }
   const html = `<!DOCTYPE html><html><head><style>
 *{box-sizing:border-box;}
-body{font-family:'Malgun Gothic',sans-serif;padding:16px 20px;color:#3c4043;margin:0;font-size:13px;line-height:1.5;}
-.title{font-size:16px;font-weight:bold;color:#4285F4;padding-bottom:10px;border-bottom:2px solid #e8eaed;margin-bottom:14px;}
-.label{font-size:11px;font-weight:bold;color:#5f6368;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
-.hint{font-size:11px;color:#9aa0a6;margin-top:5px;}
-textarea{width:100%;border:1px solid #dadce0;border-radius:4px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;line-height:1.4;}
-.cb-row{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px;}
-.btn-row{display:flex;gap:10px;margin-top:16px;}
-.btn{flex:1;padding:11px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:13px;}
-.btn-primary{background:#4285F4;color:white;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-.btn-secondary{background:white;border:1px solid #dadce0;color:#5f6368;}
-.resp-box{background:#f8f9fa;border-radius:6px;padding:14px;max-height:340px;overflow-y:auto;font-size:13px;line-height:1.6;white-space:pre-wrap;border:1px solid #e8eaed;}
-.resp-title{font-weight:bold;color:#1a73e8;margin-bottom:8px;}
-.retry-btn{display:block;width:100%;margin-top:10px;padding:9px;background:white;border:1px solid #dadce0;border-radius:6px;cursor:pointer;font-size:13px;}
+html,body{height:100%;margin:0;padding:0;}
+body{font-family:'Malgun Gothic',sans-serif;color:#3c4043;font-size:13px;line-height:1.5;display:flex;flex-direction:column;}
+.hdr{font-size:16px;font-weight:bold;color:#4285F4;padding:14px 20px 10px;border-bottom:2px solid #e8eaed;flex-shrink:0;}
+#inputSection{padding:14px 20px 16px;flex:1;display:flex;flex-direction:column;gap:6px;}
+.lbl{font-size:11px;font-weight:bold;color:#5f6368;text-transform:uppercase;letter-spacing:.5px;}
+.hint{font-size:11px;color:#9aa0a6;}
+textarea{width:100%;border:1px solid #dadce0;border-radius:4px;padding:9px;font-family:inherit;font-size:13px;line-height:1.4;}
+#q{flex:1;min-height:80px;resize:vertical;}
+.cb-row{display:flex;align-items:center;gap:8px;font-size:13px;}
+.btn-row{display:flex;gap:10px;margin-top:4px;}
+.btn{flex:1;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:13px;}
+.bp{background:#4285F4;color:white;}.bp:disabled{opacity:.5;cursor:not-allowed;}
+.bs{background:white;border:1px solid #dadce0;color:#5f6368;}
+#chatSection{display:none;flex:1;flex-direction:column;min-height:0;}
+.chat-log{flex:1;overflow-y:auto;padding:10px 16px;background:#fafafa;min-height:0;}
+.chat-user{margin:8px 0;padding:10px 12px;background:#e8f0fe;border-radius:8px;border-left:3px solid #4285F4;}
+.chat-ai{margin:8px 0;padding:10px 12px;background:#f8f9fa;border-radius:8px;border-left:3px solid #34a853;}
+.chat-lbl{font-size:11px;font-weight:bold;color:#5f6368;margin-bottom:4px;}
+.chat-txt{white-space:pre-wrap;font-size:13px;line-height:1.6;}
+.chat-foot{flex-shrink:0;border-top:1px solid #e8eaed;padding:10px 16px 14px;}
+#followQ{width:100%;resize:none;margin-bottom:8px;}
 </style></head><body>
-<div class="title">💬 AI에게 질문하기</div>
+<div class="hdr">💬 AI에게 질문하기</div>
 <div id="inputSection">
-  <div class="label">질문 내용</div>
-  <textarea id="q" rows="5" placeholder="예: 지금 S&P500 비중 늘려도 괜찮을까요? 요즘 금 시장 상황은?"></textarea>
+  <div class="lbl">질문 내용</div>
+  <textarea id="q" placeholder="예: 지금 S&P500 비중 늘려도 괜찮을까요? 요즘 금 시장 상황은?"></textarea>
   <div class="hint">간단한 시황 질문도 가능합니다.</div>
-  <div class="cb-row">
-    <input type="checkbox" id="inclData" checked>
-    <label for="inclData">📊 현재 포트폴리오 데이터 포함 (데이터 기반 질문 권장)</label>
-  </div>
+  <div class="cb-row"><input type="checkbox" id="inclData" checked><label for="inclData">📊 현재 포트폴리오 데이터 포함 (데이터 기반 질문 권장)</label></div>
   <div class="btn-row">
-    <button class="btn btn-secondary" onclick="google.script.host.close()">닫기</button>
-    <button class="btn btn-primary" id="askBtn" onclick="ask()">💬 질문하기</button>
+    <button class="btn bs" onclick="google.script.host.close()">닫기</button>
+    <button class="btn bp" id="firstBtn" onclick="ask()">💬 질문하기</button>
   </div>
 </div>
-<div id="respSection" style="display:none;">
-  <div class="resp-title">🤖 AI 응답</div>
-  <div class="resp-box" id="respBox"></div>
-  <button class="retry-btn" onclick="retry()">↩️ 다시 질문하기</button>
-  <div class="btn-row" style="margin-top:8px;">
-    <button class="btn btn-secondary" onclick="google.script.host.close()">닫기</button>
+<div id="chatSection">
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chat-foot">
+    <textarea id="followQ" rows="2" placeholder="이어서 질문하기..."></textarea>
+    <div class="btn-row">
+      <button class="btn bs" onclick="google.script.host.close()">닫기</button>
+      <button class="btn bp" id="sendBtn" onclick="send()">💬 전송</button>
+    </div>
   </div>
 </div>
 <script>
+var hist=[],inclFlag=false,MAX=10;
 function ask(){
   var q=document.getElementById('q').value.trim();
   if(!q){alert('질문을 입력해주세요.');return;}
-  var btn=document.getElementById('askBtn');
+  inclFlag=document.getElementById('inclData').checked;
+  hist=[{role:'user',text:q}];
+  var btn=document.getElementById('firstBtn');
   btn.disabled=true;btn.textContent='⏳ 질문 중...';
   google.script.run
-    .withSuccessHandler(function(resp){
-      document.getElementById('inputSection').style.display='none';
-      document.getElementById('respBox').textContent=resp;
-      document.getElementById('respSection').style.display='block';
+    .withSuccessHandler(function(r){hist.push({role:'model',text:r});showChat();})
+    .withFailureHandler(function(e){btn.disabled=false;btn.textContent='💬 질문하기';alert('오류: '+e.message);})
+    .runAIQuickQuestionMultiTurn(hist,inclFlag);
+}
+function showChat(){
+  document.getElementById('inputSection').style.display='none';
+  var cs=document.getElementById('chatSection');cs.style.display='flex';
+  document.getElementById('chatLog').innerHTML='';
+  bubble('user',hist[0].text);bubble('model',hist[1].text);scrollBot();
+}
+function send(){
+  var q=document.getElementById('followQ').value.trim();
+  if(!q)return;
+  hist.push({role:'user',text:q});
+  bubble('user',q);
+  document.getElementById('followQ').value='';
+  var btn=document.getElementById('sendBtn');
+  btn.disabled=true;btn.textContent='⏳';
+  var lid='ld_'+Date.now();
+  bubble('model','⏳ 응답 중...',lid);scrollBot();
+  var msgs=hist.slice(-MAX);
+  while(msgs.length&&msgs[0].role!=='user')msgs=msgs.slice(1);
+  google.script.run
+    .withSuccessHandler(function(r){
+      var el=document.getElementById(lid);if(el)el.remove();
+      hist.push({role:'model',text:r});bubble('model',r);
+      btn.disabled=false;btn.textContent='💬 전송';scrollBot();
     })
     .withFailureHandler(function(e){
-      btn.disabled=false;btn.textContent='💬 질문하기';
-      alert('오류: '+e.message);
+      var el=document.getElementById(lid);if(el)el.remove();
+      hist.pop();btn.disabled=false;btn.textContent='💬 전송';alert('오류: '+e.message);
     })
-    .runAIQuickQuestion(q,document.getElementById('inclData').checked);
+    .runAIQuickQuestionMultiTurn(msgs,inclFlag);
 }
-function retry(){
-  document.getElementById('respSection').style.display='none';
-  document.getElementById('respBox').textContent='';
-  document.getElementById('inputSection').style.display='block';
-  var btn=document.getElementById('askBtn');
-  btn.disabled=false;btn.textContent='💬 질문하기';
+function bubble(role,text,id){
+  var log=document.getElementById('chatLog'),d=document.createElement('div');
+  d.className=role==='user'?'chat-user':'chat-ai';if(id)d.id=id;
+  d.innerHTML='<div class="chat-lbl">'+(role==='user'?'나':'🤖 AI')+'</div><div class="chat-txt">'+esc(text)+'</div>';
+  log.appendChild(d);
 }
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function scrollBot(){var l=document.getElementById('chatLog');l.scrollTop=l.scrollHeight;}
 <\/script></body></html>`;
-  SpreadsheetApp.getUi().showModalDialog(
-    HtmlService.createHtmlOutput(html).setWidth(620).setHeight(520),
+  SpreadsheetApp.getUi().showModelessDialog(
+    HtmlService.createHtmlOutput(html).setWidth(620).setHeight(600),
     ' '
   );
 }
