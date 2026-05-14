@@ -639,6 +639,47 @@ function runAIQuickQuestion(question, includeData) {
   throw new Error('AI 응답이 올바르지 않습니다: ' + response.getContentText().substring(0, 200));
 }
 
+/**
+ * AI 멀티턴 질문 처리 — 대화 히스토리를 Gemini contents 배열로 전달
+ * @param {{role:'user'|'model', text:string}[]} messages - 최근 N개 메시지 배열 (클라이언트에서 트리밍)
+ * @param {boolean} inclData - true면 첫 번째 user 메시지에 포트폴리오 현황 주입
+ */
+function runAIQuickQuestionMultiTurn(messages, inclData) {
+  const config = getConfig();
+  if (!config.geminiApiKey) throw new Error('Gemini API Key가 설정되지 않았습니다.');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModelId}:generateContent?key=${config.geminiApiKey}`;
+
+  const systemContext = `너는 한국 주식·ETF 포트폴리오 투자 전문가야. 사용자는 한국투자증권 API로 자동 리밸런싱을 운용 중이며, 국내주식·해외주식·채권·금·달러·현금을 분산하는 자산배분 포트폴리오를 관리하고 있어. 질문에 한국어로 간결하고 실용적으로 답변해줘. 투자 조언이 아닌 참고용 분석임을 명심해.`;
+
+  const contents = messages.map(function(msg, idx) {
+    let text = msg.text;
+    if (inclData && idx === 0 && msg.role === 'user') {
+      if (text.indexOf('[현재 포트폴리오 현황]') === -1) {
+        text = text + '\n\n[현재 포트폴리오 현황]:\n' + getDashboardStateForAI();
+      }
+    }
+    return { role: msg.role, parts: [{ text: text }] };
+  });
+
+  const payload = {
+    system_instruction: { parts: [{ text: systemContext }] },
+    contents: contents,
+    tools: [{ googleSearch: {} }]
+  };
+  const options = {
+    method: 'post', contentType: 'application/json',
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const resJson = JSON.parse(response.getContentText());
+  if (resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content) {
+    return resJson.candidates[0].content.parts[0].text;
+  }
+  throw new Error('AI 응답이 올바르지 않습니다: ' + response.getContentText().substring(0, 200));
+}
+
 // ─────────────────────────────────────────────────────────────
 // 비중 적용 (Layer 1 락 포함)
 // ─────────────────────────────────────────────────────────────
