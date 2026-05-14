@@ -646,7 +646,8 @@ function scrollBot(){var l=document.getElementById('chatLog');l.scrollTop=l.scro
  */
 function runAIQuickQuestion(question, includeData) {
   if (Array.isArray(question)) {
-    return runAIQuickQuestionMultiTurn(question, includeData);
+    // 구버전 컨테이너는 inclData를 전달하지 않으므로 undefined → true로 기본값 처리
+    return runAIQuickQuestionMultiTurn(question, includeData !== false);
   }
 
   const config = getConfig();
