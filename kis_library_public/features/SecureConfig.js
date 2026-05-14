@@ -49,6 +49,7 @@ function openSecureConfigDialog() {
       <div class="form-group">
         <label>계좌번호 (예: 12345678-01)</label>
         <input type="text" id="account" value="${config.account}">
+        <p class="help-text">모의투자 계좌는 뒤에 '-01' 없이 숫자만 입력하세요 (예: 50187195)</p>
       </div>
       <div class="form-group">
         <label>Gemini API Key</label>

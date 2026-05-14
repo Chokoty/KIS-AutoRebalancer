@@ -616,14 +616,17 @@ function runAIQuickQuestion(question, includeData) {
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModelId}:generateContent?key=${config.geminiApiKey}`;
 
-  let prompt = question;
+  const systemContext = `너는 한국 주식·ETF 포트폴리오 투자 전문가야. 사용자는 한국투자증권 API로 자동 리밸런싱을 운용 중이며, 국내주식·해외주식·채권·금·달러·현금을 분산하는 자산배분 포트폴리오를 관리하고 있어. 질문에 한국어로 간결하고 실용적으로 답변해줘. 투자 조언이 아닌 참고용 분석임을 명심해.`;
+
+  let userPrompt = question;
   if (includeData) {
     const dashState = getDashboardStateForAI();
-    prompt = `${question}\n\n[현재 포트폴리오 현황]:\n${dashState}`;
+    userPrompt = `${question}\n\n[현재 포트폴리오 현황]:\n${dashState}`;
   }
 
   const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
+    system_instruction: { parts: [{ text: systemContext }] },
+    contents: [{ parts: [{ text: userPrompt }] }],
     tools: [{ googleSearch: {} }]
   };
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true };
