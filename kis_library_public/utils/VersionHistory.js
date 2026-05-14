@@ -69,10 +69,23 @@ function showVersionHistory() {
       </head>
       <body>
         <h3>📜 시스템 업데이트 내역</h3>
-        
+
         <div class="version-block">
           <div class="version-title">
-            v1.1.0 <span class="badge badge-new">New</span>
+            v1.2.0 <span class="badge badge-new">New</span>
+            <span class="version-date">2026.05.14</span>
+          </div>
+          <ul>
+            <li><strong>💬 AI 빠른 질문 멀티턴 채팅:</strong> 응답 아래에 이어서 대화할 수 있는 채팅 방식으로 개편. 최근 10개 메시지를 AI에 전달하여 문맥을 유지합니다.</li>
+            <li><strong>📊 AI 빠른 질문 마크다운 렌더링:</strong> AI 응답의 굵은 글씨·불릿·제목이 올바르게 표시됩니다.</li>
+            <li><strong>🔄 AI 비중 제안 분석 중 안내:</strong> 분석이 진행되는 동안 우측 하단에 로딩 안내 팝업이 표시되고, 결과 창이 열리면 자동으로 닫힙니다.</li>
+            <li><strong>📋 당일 AI 추천 중복 방지:</strong> 오늘 이미 추천이 있는 경우 재실행 전 확인창이 뜨며, 확인 시 당일 추천을 새 결과로 교체합니다.</li>
+          </ul>
+        </div>
+
+        <div class="version-block">
+          <div class="version-title">
+            v1.1.0 <span class="badge">Release</span>
             <span class="version-date">2026.05.13</span>
           </div>
           <ul>
