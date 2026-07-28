@@ -12,6 +12,18 @@ function onOpen() {
   KIS.onOpen();
 }
 
+function onEdit(e) {
+  if (!e || !e.range) return;
+  const sheetName = e.range.getSheet().getName();
+  if (sheetName !== '📋 포트폴리오설정') return;
+  e.range.setValue(e.oldValue !== undefined ? e.oldValue : '');
+  SpreadsheetApp.getUi().alert(
+    '⚠️ 직접 편집 불가',
+    '포트폴리오 설정은 팝업 창에서만 수정할 수 있습니다.\n\n메뉴 → KIS AutoTrader → 포트폴리오 종목 관리',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
 // 대시보드
 function updateDashboard()                  { KIS.updateDashboard(); }
 function updateAccountSheet()               { KIS.updateAccountSheet(); }
@@ -35,6 +47,7 @@ function forceRefreshToken()                { KIS.forceRefreshToken(); }
 function addInitialRatiosColumn()           { KIS.addInitialRatiosColumn(); }
 
 // AI 분석
+function openAIBriefingPreview()            { KIS.openAIBriefingPreview(); }
 function runAIBriefing()                    { KIS.runAIBriefing(); }
 function openAIQuickQuestion()              { KIS.openAIQuickQuestion(); }
 function runAIQuickQuestion(q, inclData)              { return KIS.runAIQuickQuestion(q, inclData); }
@@ -51,6 +64,11 @@ function unlockRatioChange()               { KIS.unlockRatioChange(); }
 function openPortfolioManagerDialog()      { KIS.openPortfolioManagerDialog(); }
 function searchStockByCode(code)           { return KIS.searchStockByCode(code); }
 function savePortfolioSettings(rows)       { return KIS.savePortfolioSettings(rows); }
+
+// 시스템 상태 / 차선유지 설정
+function showSystemStatus()                { KIS.showSystemStatus(); }
+function showHighwaySettings()             { KIS.showHighwaySettings(); }
+function applyHighwaySettings(day, h, off) { KIS.applyHighwaySettings(day, h, off); }
 
 // 안내
 function showUsageGuide()                  { KIS.showUsageGuide(); }

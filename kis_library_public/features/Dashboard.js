@@ -10,16 +10,17 @@ function setupDashboardSheet(sheet) {
     .setHorizontalAlignment('center')
     .setBackground('#4285f4')
     .setFontColor('white');
-
-  // 업데이트 알림 배너
-  const updateMsg = (typeof checkVersionUpdate === 'function') ? checkVersionUpdate() : null;
+  
+  // 버전 업데이트 알림 배너 (신규 버전 배포 시 1회만 표시, 업데이트 내역 확인 시 소멸)
+  const updateMsg = checkVersionUpdate();
   if (updateMsg) {
     sheet.getRange('A2:N2').merge()
       .setValue(updateMsg)
       .setFontWeight('bold')
       .setFontColor('white')
-      .setBackground('#ea4335')
-      .setHorizontalAlignment('center');
+      .setBackground('#1a73e8')
+      .setHorizontalAlignment('center')
+      .setFontSize(11);
   } else {
     sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
   }
@@ -81,6 +82,22 @@ function setupDashboardSheet(sheet) {
   // sheet.showColumns(1, 12); // 불필요하게 모든 컬럼을 보일 필요 없음
   sheet.hideColumns(13, 3);
   trimExtraColumns(sheet);
+}
+
+// 대시보드 B7 주행 상태 텍스트만 빠르게 갱신 (API 호출 없음)
+function updateDashboardStatus() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('📊 대시보드');
+  if (!sheet) return;
+
+  const triggers = ScriptApp.getProjectTriggers();
+  const hasHighwayTrigger = triggers.some(t => t.getHandlerFunction() === 'scheduledBiWeeklyRebalance');
+  PropertiesService.getScriptProperties().setProperty('HIGHWAY_LANE_KEEPING', hasHighwayTrigger ? 'TRUE' : 'FALSE');
+
+  const statusText = `차선유지:${hasHighwayTrigger ? 'ON' : 'OFF'}`;
+  const statusCell = sheet.getRange('B7');
+  statusCell.setValue(statusText);
+  statusCell.setFontColor(hasHighwayTrigger ? '#137333' : '#5f6368').setFontWeight('bold');
 }
 
 // 통합 대시보드 업데이트 (목표 수익률 추가)
@@ -154,15 +171,7 @@ function updateDashboard() {
     sheet.getRange('B3').setValue(totalEval).setNumberFormat('#,##0');
     sheet.getRange('B4').setValue(balance.cash).setNumberFormat('#,##0');
 
-    // 보호 예수금 상태 표시 (C4)
-    const protInfo = getProtectedCash();
-    const protCell = sheet.getRange('C4');
-    if (protInfo.amount > 0) {
-      protCell.setValue(`🔒 ${protInfo.amount.toLocaleString()}원 보호중 (${protInfo.daysLeft}일 후 해제)`)
-        .setFontColor('#e65100').setFontSize(10).setFontWeight('bold').setBackground('#fff3e0');
-    } else {
-      protCell.clearContent().setBackground('white').setFontWeight('normal');
-    }
+    sheet.getRange('C4').clearContent().setBackground('white').setFontWeight('normal');
 
     sheet.getRange('B5').setValue(cashRatio.toFixed(2) + '%');
     sheet.getRange('B6').setValue(new Date()).setNumberFormat('yyyy-mm-dd hh:mm:ss');
@@ -195,10 +204,11 @@ function updateDashboard() {
     }
     
     // 5-1. 주행 상태 실제 트리거 확인 및 동기화
-    const props = PropertiesService.getScriptProperties();
     const triggers = ScriptApp.getProjectTriggers();
     const hasHighwayTrigger = triggers.some(t => t.getHandlerFunction() === 'scheduledBiWeeklyRebalance');
-    props.setProperty('HIGHWAY_LANE_KEEPING', hasHighwayTrigger ? 'TRUE' : 'FALSE');
+
+    // 트리거 상태와 프로퍼티 동기화 (수동 삭제 대응)
+    PropertiesService.getScriptProperties().setProperty('HIGHWAY_LANE_KEEPING', hasHighwayTrigger ? 'TRUE' : 'FALSE');
 
     const statusText = `차선유지:${hasHighwayTrigger ? 'ON' : 'OFF'}`;
     const statusCell = sheet.getRange('B7');
@@ -230,7 +240,9 @@ function updateDashboard() {
       const lastRow = portfolioSheet.getLastRow();
       for (let i = 3; i <= lastRow; i++) {
         if (portfolioSheet.getRange(i, 2).getValue() === '현금') {
-          targetCashRatio = parseFloat(portfolioSheet.getRange(i, 4).getValue()) || 5; // D: 운용비율
+          const baseCash = parseFloat(portfolioSheet.getRange(i, 3).getValue()) || 0;
+          const adjCash  = parseFloat(portfolioSheet.getRange(i, 4).getValue()) || 0;
+          targetCashRatio = (baseCash + adjCash) || 5;
           break;
         }
       }
@@ -256,9 +268,10 @@ function updateDashboard() {
       ss.toast(`⚠️ 즉시 매수 가능액은 ${immediateBuyPossible.toLocaleString()}원입니다. 나머지는 매도 체결 후 가능합니다.`, '현금 부족 알림');
     }
     
-    // 9. 기존 데이터 삭제 (15개 컬럼 모두 삭제)
+    // 9. 기존 데이터 삭제 — 값(lastRow 기준) + 서식(값 없이 색만 남은 행 포함, 고정 범위)
     const lastRow = sheet.getLastRow();
-    if (lastRow >= 9) { // 헤더가 8행으로 복구되었으므로 9행부터 삭제
+    sheet.getRange(9, 1, 50, 15).setBackground(null).setFontColor(null).setFontWeight('normal');
+    if (lastRow >= 9) {
       sheet.getRange(9, 1, lastRow - 8, 15).clearContent();
     }
     
@@ -284,13 +297,17 @@ function updateDashboard() {
       // sheet.showColumns(1, 12);
       sheet.hideColumns(13, 3); // Hides columns 13, 14, 15
       
-      // 색상 적용
+      // 색상 적용 — 비대칭 임계치 (매도 5%, 매수 1%)
+      const cfg = getConfig();
+      const baseTol = cfg.rebalanceTolerance || 2.0;
+      const sellTol = baseTol * 2.5;
+      const buyTol  = baseTol * 0.5;
       for (let i = 0; i < allStocks.length; i++) {
         const row = 9 + i;
         const stock = allStocks[i];
         const diffCell = sheet.getRange(row, 10); // Column J (Diff)
-        const config = getConfig();
-        if (Math.abs(stock.diff) > (config.rebalanceTolerance || 2.0)) {
+        const exceeds = stock.diff > 0 ? stock.diff > buyTol : Math.abs(stock.diff) > sellTol;
+        if (exceeds) {
           if (stock.diff > 0) diffCell.setBackground('#fce8e6').setFontColor('#c53929');
           else diffCell.setBackground('#e8f0fe').setFontColor('#1a73e8');
         } else {
@@ -334,20 +351,30 @@ function updateDashboard() {
  */
 function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio, options = {}) {
   const config = getConfig();
-  const tolerance = options.tolerance || config.rebalanceTolerance || 2.0;
+  const baseTol = options.tolerance || config.rebalanceTolerance || 2.0;
+  // 비대칭 tolerance — 승자는 더 오래 보유, 패자는 적극 매수
+  // 매도: 큰 임계치(승자 보유 효과), 매수: 작은 임계치(저점 매수 효과)
+  const sellTolerance = options.sellTolerance || baseTol * 1.5; // 기본 3.0%
+  const buyTolerance  = options.buyTolerance  || baseTol * 0.5; // 기본 1.0%
+  const tolerance = baseTol; // 기존 코드 호환용 (재배분 매도 등에서 사용)
   const profitTakingThreshold = options.profitTakingThreshold || config.profitTakingThreshold || 40.0;
-  const useTAForQty = false;
-  const REDISTRIBUTE_THRESHOLD = 0.15;
+  const fsdMode = PropertiesService.getScriptProperties().getProperty('FSD_DRIVING_MODE') || 'Standard';
+  // TA 기반 수량 조정 = 모드에만 종속 (FSD ON/OFF는 스케줄링만 영향)
+  //   Chill / Standard: 단순 리밸런싱 (TA 무관)
+  //   Hurry 이상: TA 기반 스마트 리밸런싱
+  const useTAForQty = !['Chill', 'Standard'].includes(fsdMode);
+  const REDISTRIBUTE_THRESHOLD = 0.15; // 수익률 15% 이상 시 재배분 매도 고려
   const allStocks = [];
   const priceCache = {};
-  const scoreCache = {};
+  const scoreCache = {}; // { code: { score, summary } }
 
   holdings.forEach(h => priceCache[h.code] = h.currentPrice);
   Object.keys(targetPortfolio).forEach(code => {
     if (!priceCache[code] || priceCache[code] === 0) {
       priceCache[code] = getCurrentPrice(code);
-      if(priceCache[code] > 0) Utilities.sleep(100);
+      if(priceCache[code] > 0) Utilities.sleep(300);
     }
+    // 기술지표(TA)는 대시보드 새로고침 시 조회하지 않음 — AI 분석/FSD 실행 시 별도 호출
     scoreCache[code] = { score: 0, summary: '중립' };
   });
 
@@ -367,7 +394,22 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
 
     // 수익률 기반 공격적 매도 여부 판단
     const isHighProfit = holding && (holding.profitRate * 100 >= profitTakingThreshold);
-    const baseTolerance = isHighProfit ? 0.1 : tolerance;
+
+    // 수익실현 발동 — TA 활성 시 score < 0 인 경우만 (상승 중이면 보유)
+    let ptSellRatio = 0;
+    let profitTakingActive = false;
+    if (isHighProfit) {
+      if (useTAForQty) {
+        ptSellRatio = getProfitTakingSellRatio(fsdMode, ta.score);
+        profitTakingActive = ptSellRatio > 0;
+      } else {
+        // TA 비활성 모드(Standard + AI off): 기존 동작 유지 (전량 비중 회복)
+        profitTakingActive = true;
+        ptSellRatio = 1.0;
+      }
+    }
+    // 수익실현 발동 시는 0.1%로 타이트하게 (TA 신호 확정), 아니면 비대칭 매도 임계치 적용
+    const baseTolerance = profitTakingActive ? 0.1 : sellTolerance;
 
     // 기술적 지표 기반 매도 tolerance 축소 (TA 조정 활성 시에만)
     const sellToleranceMult = useTAForQty ? getSellToleranceMultiplier(fsdMode, ta.score) : 1.0;
@@ -384,7 +426,14 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
       if (availableToSell <= 0) return;
 
       let targetAmount;
-      if (isRedistribute && diff >= -effectiveTolerance) {
+      if (profitTakingActive && ptSellRatio > 0 && ptSellRatio < 1.0) {
+        // TA 기반 부분 수익실현: 목표 초과분(excess)의 ptSellRatio만큼만 매도
+        const fullTargetAmount = managedTotal * (target.ratio / 100);
+        const fullExcess = holding.evalAmount - fullTargetAmount;
+        targetAmount = fullExcess > 0
+          ? holding.evalAmount - fullExcess * ptSellRatio
+          : fullTargetAmount;
+      } else if (isRedistribute && diff >= -effectiveTolerance) {
         // 비중 초과가 아닌 순수 재배분 매도: 목표의 redistributeRatio까지 추가 매도
         const redistributeRatio = getRedistributeRatio(fsdMode);
         targetAmount = managedTotal * (target.ratio / 100) * redistributeRatio;
@@ -407,7 +456,8 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
             code, name: target.name, type: target.type, quantity, price: currentPrice,
             amount: rawSellAmount,
             actualProceeds: actualSellProceeds,
-            isProfitTaking: isHighProfit,
+            isProfitTaking: profitTakingActive,
+            ptSellRatio: profitTakingActive ? ptSellRatio : 0,
             isRedistribute,
             taScore: ta.score,
             avgPrice: holding.avgPrice
@@ -418,9 +468,7 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
   });
 
   const targetCashRatio = options.targetCashRatio || 5;
-  // 보호 예수금 차감 (수익실현 후 2주 보호 기간 동안 리밸런싱에서 제외)
-  const protectedCashInfo = getProtectedCash();
-  const effectiveBuyPower = Math.max(0, balance.buyPower - protectedCashInfo.amount);
+  const effectiveBuyPower = balance.buyPower;
 
   const actualCash = effectiveBuyPower + totalSellAmount; // 매도 후 가용 현금
   const targetCashAmount = managedTotal * (targetCashRatio / 100); // 목표 현금 보유액 (managedTotal은 이미 현금 포함 총액)
@@ -440,8 +488,8 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
     const shortfall = newTargetAmount - currentAmount;
     const diffPct = target.ratio - (currentAmount / managedTotal * 100);
 
-    // 매도와 동일하게 tolerance 이상 차이날 때만 매수 대상에 추가
-    if (shortfall > 0 && diffPct > tolerance) {
+    // 매수는 작은 임계치 — 저점 매수 적극적
+    if (shortfall > 0 && diffPct > buyTolerance) {
        buyTargets.push({
          code, name: target.name, type: target.type, shortfall,
          diff: diffPct
@@ -588,10 +636,18 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
         } else {
           const targetInBuyList = buyTargets.find(t => t.code === code);
           if (targetInBuyList) {
-            const currentRemaining = Math.max(0, tradableCash) - totalBuyNeeded;
-            if (currentRemaining < checkPrice || (targetInBuyList.shortfall < checkPrice * 0.5)) {
+            // 실제 현금으로 1주라도 살 수 있는지 판별 (목표 현금의 10% 여유 허용)
+            const canAffordOne = effectiveBuyPower - targetCashAmount + cashSlack >= checkPrice * (1 + config.buyFeeRate);
+            if (!canAffordOne) {
               action = '⚠️ 예산부족';
               actionAmount = `1주 ${checkPrice.toLocaleString()}원`;
+            } else {
+              // 현금은 있지만 buyOrders 계산에서 누락된 경우 — 매수로 표시
+              action = '🛒 매수';
+              actionQuantity = 1;
+              actionPrice = checkPrice;
+              actionAmount = `1주 ${checkPrice.toLocaleString()}원`;
+              needsRebalance = true;
             }
           }
         }
@@ -605,17 +661,15 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
     if (buyOrder) expectedAmount += buyOrder.amount;
     const expectedRatio = (expectedAmount / managedTotal) * 100;
 
-    allStocks.push({
-      code, name: target.name, type: target.type,
-      quantity: holding?.quantity || 0, currentPrice: priceCache[code] || 0,
-      evalAmount: holding?.evalAmount || 0,
+    allStocks.push({ 
+      code, name: target.name, type: target.type, 
+      quantity: holding?.quantity || 0, currentPrice: priceCache[code] || 0, 
+      evalAmount: holding?.evalAmount || 0, 
       avgPrice: holding?.avgPrice || 0,
-      currentRatio: current, targetRatio: target.ratio,
-      expectedRatio, diff, action, actionQuantity, actionPrice, actionAmount, needsRebalance
+      currentRatio: current, targetRatio: target.ratio, 
+      expectedRatio, diff, action, actionQuantity, actionPrice, actionAmount, needsRebalance 
     });
   });
-
-
 
   let totalFees = 0;
   sellOrders.forEach(o => totalFees += (o.amount - o.actualProceeds));
@@ -783,10 +837,32 @@ function executeRebalanceFromDashboard() {
     Utilities.sleep(500);
   }
   
+  // 실패 주문 재시도 (원자성 보장)
+  const failedOrders = results.filter(r => !r.success);
+  if (failedOrders.length > 0) {
+    ss.toast(`실패 ${failedOrders.length}건 재시도 중...`, '🔄 재시도', 5);
+    Utilities.sleep(2000);
+    for (const failed of failedOrders) {
+      const type = failed.action === '매도' ? 'sell' : 'buy';
+      const retryResult = placeOrder(failed.code, type, failed.quantity, 0);
+      if (retryResult.success) {
+        const idx = results.findIndex(r => r.code === failed.code && r.action === failed.action);
+        if (idx >= 0) results[idx].success = true;
+      }
+      logSheet.appendRow([
+        new Date(), failed.action + '(재시도)', failed.code, failed.name,
+        failed.quantity, failed.price, failed.quantity * failed.price,
+        retryResult.success ? '성공' : '실패', retryResult.message
+      ]);
+      trimExtraColumns(logSheet, 9);
+      Utilities.sleep(500);
+    }
+  }
+
   // 결과 표시
   const successCount = results.filter(r => r.success).length;
   const failCount = results.filter(r => !r.success).length;
-  
+
   ss.toast(
     `✅ 성공: ${successCount}건 | ❌ 실패: ${failCount}건`,
     '🔄 리밸런싱 실행 완료',
@@ -811,10 +887,10 @@ function executeRebalanceFromDashboard() {
 function executeRebalanceSilently() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('📊 대시보드');
-  if (!sheet) return;
-  
+  if (!sheet) return 0;
+
   const lastRow = sheet.getLastRow();
-  if (lastRow < 9) return;
+  if (lastRow < 9) return 0;
   
   const sellList = [];
   const buyList = [];
@@ -855,6 +931,7 @@ function performRebalanceOrders(sellList, buyList) {
   let successCount = 0;
 
   // 매도 우선
+  const failedSells = [];
   sellList.forEach(order => {
     const result = placeOrder(order.code, 'sell', order.quantity, 0);
     if (result.success) {
@@ -865,6 +942,8 @@ function performRebalanceOrders(sellList, buyList) {
         let cumulative = realizedProfit + (lastRow >= 1 ? (parseFloat(profitSheet.getRange(lastRow, 8).getValue()) || 0) : 0);
         profitSheet.appendRow([new Date(), order.name, order.action, order.quantity, order.price, order.quantity * order.price, realizedProfit, cumulative]);
       }
+    } else {
+      failedSells.push(order);
     }
     logSheet.appendRow([new Date(), '매도', order.code, order.name, order.quantity, order.price, order.quantity * order.price, result.success ? '성공' : '실패', result.message]);
     trimExtraColumns(logSheet, 9);
@@ -872,14 +951,29 @@ function performRebalanceOrders(sellList, buyList) {
   });
 
   // 매수
+  const failedBuys = [];
   buyList.forEach(order => {
     const result = placeOrder(order.code, 'buy', order.quantity, 0);
     if (result.success) successCount++;
+    else failedBuys.push(order);
     logSheet.appendRow([new Date(), '매수', order.code, order.name, order.quantity, order.price, order.quantity * order.price, result.success ? '성공' : '실패', result.message]);
     trimExtraColumns(logSheet, 9);
     Utilities.sleep(500);
   });
-  
+
+  // 실패 주문 재시도 (원자성 보장)
+  const retryList = [...failedSells.map(o => ({ ...o, type: 'sell' })), ...failedBuys.map(o => ({ ...o, type: 'buy' }))];
+  if (retryList.length > 0) {
+    Utilities.sleep(2000);
+    retryList.forEach(order => {
+      const result = placeOrder(order.code, order.type, order.quantity, 0);
+      if (result.success) successCount++;
+      logSheet.appendRow([new Date(), (order.type === 'sell' ? '매도' : '매수') + '(재시도)', order.code, order.name, order.quantity, order.price, order.quantity * order.price, result.success ? '성공' : '실패', result.message]);
+      trimExtraColumns(logSheet, 9);
+      Utilities.sleep(500);
+    });
+  }
+
   if (successCount > 0) {
     Utilities.sleep(8000);
     updateDashboard();
