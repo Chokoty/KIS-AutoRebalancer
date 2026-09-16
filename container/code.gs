@@ -12,16 +12,44 @@ function onOpen() {
   KIS.onOpen();
 }
 
+// 시스템이 계산해서 채우는 화면 — 사람이 직접 값을 입력하면 안 되는 시트
+const READONLY_OUTPUT_SHEETS = [
+  '📊 대시보드', '🏦 계좌현황', '📝 거래내역',
+  '📝 수익실현기록', '📝 비중변경이력', '📊 기술지표이력'
+];
+
 function onEdit(e) {
   if (!e || !e.range) return;
+  const ui = SpreadsheetApp.getUi();
   const sheetName = e.range.getSheet().getName();
-  if (sheetName !== '📋 포트폴리오설정') return;
-  e.range.setValue(e.oldValue !== undefined ? e.oldValue : '');
-  SpreadsheetApp.getUi().alert(
-    '⚠️ 직접 편집 불가',
-    '포트폴리오 설정은 팝업 창에서만 수정할 수 있습니다.\n\n메뉴 → KIS AutoTrader → 포트폴리오 종목 관리',
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
+  const revert = () => e.range.setValue(e.oldValue !== undefined ? e.oldValue : '');
+
+  // 1. 포트폴리오설정: 전체가 팝업 전용
+  if (sheetName === '📋 포트폴리오설정') {
+    revert();
+    ui.alert('⚠️ 직접 편집 불가',
+      '포트폴리오 설정은 팝업 창에서만 수정할 수 있습니다.\n\n메뉴 → KIS AutoTrader → 포트폴리오 종목 관리',
+      ui.ButtonSet.OK);
+    return;
+  }
+
+  // 2. ⚙️ 설정: 계좌종류·임계치(B7:B10)만 팝업 전용 — API 키(B2:B5)는 그대로 시트 직접 입력 가능
+  if (sheetName === '⚙️ 설정' && e.range.getColumn() === 2 &&
+      e.range.getRow() >= 7 && e.range.getRow() <= 10) {
+    revert();
+    ui.alert('⚠️ 직접 편집 불가',
+      '계좌 종류·임계치는 팝업 창에서만 수정할 수 있습니다.\n\n메뉴 → KIS AutoTrader → 설정 및 관리 → 기본 설정',
+      ui.ButtonSet.OK);
+    return;
+  }
+
+  // 3. 시스템 출력 시트: 아예 편집 금지
+  if (READONLY_OUTPUT_SHEETS.indexOf(sheetName) !== -1) {
+    revert();
+    ui.alert('⚠️ 직접 편집 불가',
+      '이 시트는 시스템이 자동으로 채우는 화면입니다. 값을 직접 입력하지 마세요.',
+      ui.ButtonSet.OK);
+  }
 }
 
 // 대시보드
@@ -43,6 +71,8 @@ function releaseProtectedCash()             { KIS.releaseProtectedCash(); }
 function setupSheets()                      { KIS.setupSheets(); }
 function openSecureConfigDialog()           { KIS.openSecureConfigDialog(); }
 function saveSecureConfig(data)             { KIS.saveSecureConfig(data); }
+function openBasicSettingsDialog()          { KIS.openBasicSettingsDialog(); }
+function saveBasicSettings(data)            { KIS.saveBasicSettings(data); }
 function forceRefreshToken()                { KIS.forceRefreshToken(); }
 function addInitialRatiosColumn()           { KIS.addInitialRatiosColumn(); }
 

@@ -39,6 +39,7 @@ function onOpen() {
     .addSubMenu(ui.createMenu('⚙️ 설정 및 관리')
       .addItem('⚙️ 초기 설정',                  'setupSheets')
       .addItem('🛡️ API 키 보안 설정',           'openSecureConfigDialog')
+      .addItem('🔧 기본 설정 (계좌종류·임계치)', 'openBasicSettingsDialog')
       .addItem('📋 포트폴리오 설정 컬럼 업데이트', 'addInitialRatiosColumn')
       .addItem('⚙️ AI 프롬프트 상세 설정',      'openAIPromptSettings')
       .addItem('🔑 토큰 초기화 (오류 발생 시)', 'forceRefreshToken')
@@ -335,6 +336,117 @@ function applyHighwaySettings(dayKey, hourStr, turnOff) {
   props.setProperty('HIGHWAY_WEEKDAY', dayKey);
   props.setProperty('HIGHWAY_HOUR', hourStr);
 
+  updateDashboard();
+}
+
+/**
+ * 🔧 기본 설정 (계좌종류·임계치) — ⚙️ 설정 시트 B7:B10은 직접 편집이 막혀 있으므로
+ * (onEdit 가드, container/code.gs) 값 변경은 이 팝업을 거친다.
+ */
+function openBasicSettingsDialog() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('⚙️ 설정');
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert('⚙️ 설정 시트를 찾을 수 없습니다. 초기 설정을 먼저 실행하세요.');
+    return;
+  }
+  const accountType    = String(sheet.getRange('B7').getValue() || '일반').trim();
+  const rebalanceTol   = sheet.getRange('B8').getValue()  || 2.0;
+  const profitThreshold= sheet.getRange('B9').getValue()  || 40.0;
+  const targetYield    = sheet.getRange('B10').getValue() || 10.0;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: 'Google Sans', Arial, sans-serif; padding: 20px; margin: 0; background: #fff; }
+  h3 { margin: 0 0 4px; font-size: 16px; color: #1a73e8; }
+  .dim { font-size: 12px; color: #5f6368; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: #3c4043; margin: 14px 0 6px; }
+  .btn-group { display: flex; gap: 6px; }
+  .btn-group button {
+    padding: 7px 14px; border: 1.5px solid #dadce0; border-radius: 20px;
+    background: #fff; font-size: 13px; cursor: pointer; color: #3c4043;
+  }
+  .btn-group button.selected { background: #1a73e8; color: #fff; border-color: #1a73e8; font-weight: 600; }
+  input[type=number] { width: 100%; padding: 8px 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+  .row-hint { font-size: 11px; color: #9aa0a6; margin-top: 4px; }
+  .actions { margin-top: 22px; text-align: right; }
+  .save-btn {
+    background: #1a73e8; color: #fff; border: none; border-radius: 4px;
+    padding: 9px 24px; font-size: 14px; cursor: pointer; font-weight: 600;
+  }
+  .save-btn:hover { background: #1558b0; }
+</style>
+</head>
+<body>
+  <h3>🔧 기본 설정</h3>
+  <div class="dim">계좌 종류·임계치는 여기서만 바꿀 수 있습니다. (시트 직접 수정은 막혀 있어요)</div>
+
+  <label>계좌 종류</label>
+  <div class="btn-group" id="typeGroup">
+    <button onclick="sel(this,'일반')" class="${accountType === '일반' ? 'selected' : ''}">일반</button>
+    <button onclick="sel(this,'ISA')"  class="${accountType === 'ISA'  ? 'selected' : ''}">ISA</button>
+    <button onclick="sel(this,'모의')" class="${accountType === '모의' ? 'selected' : ''}">모의</button>
+  </div>
+
+  <label>리밸런싱 임계치 (%)</label>
+  <input type="number" id="tol" value="${rebalanceTol}" min="0" step="0.5">
+  <div class="row-hint">현재 비중이 목표와 이 값 이상 벌어져야 매매가 발생합니다. 기본 2.0</div>
+
+  <label>수익실현 임계치 (%)</label>
+  <input type="number" id="pt" value="${profitThreshold}" min="0" step="1">
+  <div class="row-hint">종목 수익률이 이 값 이상이면 AI 브리핑에서 비중 축소를 우선 고려합니다. 기본 40</div>
+
+  <label>연 목표 수익률 (%)</label>
+  <input type="number" id="yield" value="${targetYield}" min="0" step="0.5">
+  <div class="row-hint">대시보드의 "월 인출 추천" 계산에 쓰입니다. 기본 10</div>
+
+  <div class="actions">
+    <button class="save-btn" id="saveBtn" onclick="save()">저장</button>
+  </div>
+
+<script>
+  var accountType = '${accountType}';
+
+  function sel(el, val) {
+    el.parentNode.querySelectorAll('button').forEach(function(b){ b.classList.remove('selected'); });
+    el.classList.add('selected');
+    accountType = val;
+  }
+
+  function save() {
+    var btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '저장 중...';
+    var data = {
+      accountType: accountType,
+      rebalanceTolerance: parseFloat(document.getElementById('tol').value) || 2.0,
+      profitTakingThreshold: parseFloat(document.getElementById('pt').value) || 40.0,
+      targetYield: parseFloat(document.getElementById('yield').value) || 10.0
+    };
+    google.script.run
+      .withSuccessHandler(function(){ google.script.host.close(); })
+      .withFailureHandler(function(e){ btn.disabled = false; btn.textContent = '저장'; alert('오류: ' + e.message); })
+      .saveBasicSettings(data);
+  }
+<\/script>
+</body>
+</html>`;
+
+  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(360).setHeight(440).setTitle('기본 설정');
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, '🔧 기본 설정');
+}
+
+/**
+ * openBasicSettingsDialog에서 호출 — ⚙️ 설정 시트 B7:B10에 실제로 저장
+ */
+function saveBasicSettings(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('⚙️ 설정');
+  if (!sheet) throw new Error('⚙️ 설정 시트를 찾을 수 없습니다.');
+  sheet.getRange('B7').setValue(data.accountType || '일반');
+  sheet.getRange('B8').setValue(data.rebalanceTolerance || 2.0);
+  sheet.getRange('B9').setValue(data.profitTakingThreshold || 40.0);
+  sheet.getRange('B10').setValue(data.targetYield || 10.0);
   updateDashboard();
 }
 

@@ -14,7 +14,7 @@ function openSecureConfigDialog() {
     appSecret: props.getProperty(ssId + '_KIS_APP_SECRET') || '',
     account: props.getProperty(ssId + '_KIS_ACCOUNT') || '',
     geminiApiKey: props.getProperty(ssId + '_GEMINI_API_KEY') || '',
-    geminiModelId: props.getProperty(ssId + '_GEMINI_MODEL_ID') || 'gemini-2.0-flash'
+    geminiModelId: props.getProperty(ssId + '_GEMINI_MODEL_ID') || 'gemini-2.5-flash'
   };
 
   const html = `
@@ -49,7 +49,7 @@ function openSecureConfigDialog() {
       <div class="form-group">
         <label>계좌번호 (예: 12345678-01)</label>
         <input type="text" id="account" value="${config.account}">
-        <p class="help-text">모의투자 계좌는 뒤에 '-01' 없이 숫자만 입력하세요 (예: 50187195)</p>
+        <p class="help-text">모의투자 계좌는 뒤에 '-01' 없이 숫자만 입력하세요 (예: 56789012)</p>
       </div>
       <div class="form-group">
         <label>Gemini API Key</label>
@@ -59,10 +59,10 @@ function openSecureConfigDialog() {
       <div class="form-group">
         <label>사용할 Gemini 모델</label>
         <select id="geminiModelId" style="width: 100%; padding: 8px;">
-          <option value="gemini-2.5-flash" ${config.geminiModelId === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash (최신/권장)</option>
-          <option value="gemini-2.0-flash" ${config.geminiModelId === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash (안정/대안)</option>
+          <option value="gemini-2.5-flash" ${config.geminiModelId === 'gemini-2.5-flash' ? 'selected' : ''}>Gemini 2.5 Flash (최신/추천)</option>
+          <option value="gemini-2.0-flash" ${config.geminiModelId === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash (대안)</option>
         </select>
-        <p class="help-text">최신 모델인 2.5 Flash 사용을 권장합니다.</p>
+        <p class="help-text">구독 중인 모델이나 사용 가능한 모델을 선택하세요.</p>
       </div>
       
       <div class="footer">
@@ -120,6 +120,6 @@ function saveSecureConfig(data) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('⚙️ 설정');
   if (sheet) {
     sheet.getRange('B2:B4').setValue('🛡️ 보안 저장됨 (개인 설정)');
-    sheet.getRange('B5').setValue('🛡️ 보안 저장됨 (개인 설정)');  // Gemini API Key
+    sheet.getRange('B5').setValue('🛡️ 보안 저장됨 (개인 설정)');  // Gemini API Key (B5)
   }
 }

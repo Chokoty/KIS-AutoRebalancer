@@ -106,37 +106,47 @@ function updateAccountSheet() {
 }
 
 /**
+ * 기술지표이력 시트 초기화
+ */
+function setupTAHistorySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('📊 기술지표이력');
+  if (!sheet) sheet = ss.insertSheet('📊 기술지표이력');
+
+  const HEADERS = ['날짜', '종목명', '종목코드', 'Score', '📍 판정', 'RSI', 'MACD', 'MACD Signal', 'Histogram', 'BB상단', 'BB중간', 'BB하단', 'Stoch %K', 'Stoch %D', '거래량비율', '신호요약'];
+  const curHeader = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  if (curHeader[4] !== '📍 판정') {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
+      .setFontWeight('bold').setBackground('#e8f0fe');
+    sheet.setFrozenRows(1);
+  }
+  trimExtraColumns(sheet, HEADERS.length);
+}
+
+/**
  * 포트폴리오 비중 변경 이력 시트 초기화
  * 컬럼: 시간 | 종목명 | 유형 | 변경전(%) | 변경후(%) | 변경이유 | 활용모델 | 상태
  */
 function setupAIHistorySheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('📝 비중변경이력');
-  if (!sheet) {
-    sheet = ss.insertSheet('📝 비중변경이력');
+  if (!sheet) sheet = ss.insertSheet('📝 비중변경이력');
+
+  const h = sheet.getRange('A1:H1').getValues()[0];
+  if (h[2] !== '🏷️ 유형' || h[7] !== '📊 상태') {
+    sheet.getRange('A1:H1').setValues([[
+      '🕒 시간', '📄 종목명', '🏷️ 유형', '📉 변경 전(%)', '📈 변경 후(%)', '💡 변경 이유', '🤖 활용 모델', '📊 상태'
+    ]]).setFontWeight('bold').setBackground('#673ab7').setFontColor('white').setHorizontalAlignment('center');
+    sheet.setFrozenRows(1);
   }
 
-  // 유형 컬럼이 포함된 신형 헤더인지 확인 (col 3 = 유형)
-  const currentHeader = sheet.getRange('A1:H1').getValues()[0];
-  if (currentHeader[2] === '🏷️ 유형' && currentHeader[7] === '📊 상태') {
-    trimExtraColumns(sheet, 8);
-    return;
-  }
-
-  sheet.getRange('A1:H1').setValues([[
-    '🕒 시간', '📄 종목명', '🏷️ 유형', '📉 변경 전(%)', '📈 변경 후(%)', '💡 변경 이유', '🤖 활용 모델', '📊 상태'
-  ]])
-  .setFontWeight('bold')
-  .setBackground('#673ab7')
-  .setFontColor('white')
-  .setHorizontalAlignment('center');
-
-  sheet.setFrozenRows(1);
   sheet.setColumnWidth(1, 160);
   sheet.setColumnWidth(2, 150);
   sheet.setColumnWidth(3, 80);
   sheet.setColumnWidth(6, 350);
   sheet.setColumnWidth(8, 100);
+  // 비율 컬럼을 plain number 형식으로 고정 (Sheets의 % 자동 포맷 방지)
+  sheet.getRange('D:E').setNumberFormat('0.0');
   sheet.getRange('A:H').setVerticalAlignment('middle');
   trimExtraColumns(sheet, 8);
 }
@@ -244,7 +254,7 @@ function prepareTemplateSheet() {
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. 설정 시트 초기화 (민감정보 삭제)
+  // 1. 설정 시트 초기화 (민감정보 삭제, 계좌종류는 기본값으로 리셋)
   const configSheet = ss.getSheetByName('⚙️ 설정');
   if (configSheet) {
     configSheet.getRange('B2').setValue('');
@@ -291,9 +301,7 @@ function prepareTemplateSheet() {
     accountSheet.getRange('B6').setValue('0.00%');
   }
   
-  // 5. (생활비 인출 시트 제거됨 — 수익 실현은 다이얼로그로 처리)
-
-  // 6. 모든 백그라운드 트리거 삭제
+  // 5. 모든 백그라운드 트리거 삭제
   const triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(trigger => ScriptApp.deleteTrigger(trigger));
 

@@ -7,10 +7,10 @@ function getConfig() {
   
   // 보안 저장소(UserProperties) 우선 조회, 없으면 시트에서 조회
   // 시트별 격리를 위해 Spreadsheet ID를 접두어로 사용
-  const secureAppKey      = props.getProperty(ssId + '_KIS_APP_KEY');
-  const secureAppSecret   = props.getProperty(ssId + '_KIS_APP_SECRET');
-  const secureAccount     = props.getProperty(ssId + '_KIS_ACCOUNT');
-  const secureGeminiKey   = props.getProperty(ssId + '_GEMINI_API_KEY');
+  const secureAppKey = props.getProperty(ssId + '_KIS_APP_KEY');
+  const secureAppSecret = props.getProperty(ssId + '_KIS_APP_SECRET');
+  const secureAccount = props.getProperty(ssId + '_KIS_ACCOUNT');
+  const secureGeminiKey = props.getProperty(ssId + '_GEMINI_API_KEY');
   const secureGeminiModel = props.getProperty(ssId + '_GEMINI_MODEL_ID');
 
   // B7: 계좌 종류 — '일반' | 'ISA' | '모의'
@@ -32,9 +32,9 @@ function getConfig() {
     rebalanceTolerance: parseFloat(sheet.getRange('B8').getValue()) || 2.0,
     profitTakingThreshold: parseFloat(sheet.getRange('B9').getValue()) || 40.0,
     targetYield: parseFloat(sheet.getRange('B10').getValue()) || 10.0,
-    // KIS 온라인 기준 고정 수수료 (ETF 기준, 증권거래세 없음)
+    // KIS 온라인 기준 고정 수수료 (매수 0.015%, 매도 0.215% = 수수료+증권거래세+농특세)
     buyFeeRate: 0.00015,
-    sellFeeRate: 0.00015
+    sellFeeRate: 0.00215
   };
 }
 

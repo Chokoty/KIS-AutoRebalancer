@@ -92,10 +92,11 @@ function openPortfolioManagerDialog() {
 '<div class="total-bar">' +
 '<span class="total-lbl">운용비율 합계</span>' +
 '<span class="tv" id="totalPct">-</span>' +
+'<button class="btn btn-outline" style="font-size:11px;padding:4px 8px;" onclick="autoNormalize(-1);renderTable();">⚖️ 100%로 맞추기</button>' +
 '</div>' +
-'<div style="max-height:240px;overflow-y:auto;">' +
+'<div style="max-height:280px;overflow-y:auto;">' +
 '<table class="pt"><thead><tr>' +
-'<th style="text-align:left">종목명</th><th>코드</th><th>유형</th><th>비율%</th><th></th>' +
+'<th style="text-align:left">종목명</th><th>코드</th><th>유형</th><th>기준%</th><th>조정</th><th>실제%</th><th></th>' +
 '</tr></thead><tbody id="ptBody"></tbody></table>' +
 '</div></div>' +
 
@@ -124,12 +125,19 @@ function openPortfolioManagerDialog() {
 
 'function renderTable(){' +
 '  var html=portfolio.map(function(r,i){' +
+'    var isCash=r.type==="현금";' +
+'    var base=parseFloat(r.initialRatio)||0;' +
+'    var adj=parseFloat(r.ratio)||0;' +
+'    var actual=isCash?base:base+adj;' +
+'    var adjStr=(adj>=0?"+":"")+adj;' +
+'    var actualCls=actual<0?"color:#c5221f":"color:#137333";' +
 '    return "<tr>"' +
 '      +"<td class=nm title=\\""+r.name+"\\">"+r.name+"</td>"' +
 '      +"<td class=cd>"+(r.code||"-")+"</td>"' +
-'      +"<td><select onchange=\\"portfolio["+i+"].type=this.value\\">"+typeOpts(r.type)+"</select></td>"' +
-'      +"<td><input type=number value=\\""+r.ratio+"\\" min=0 max=100 step=1 '  +
-'         onchange=\\"portfolio["+i+"].ratio=parseFloat(this.value)||0;updateTotal()\\"></td>"' +
+'      +"<td><select onchange=\\"portfolio["+i+"].type=this.value;renderTable()\\">"+typeOpts(r.type)+"</select></td>"' +
+'      +"<td><input type=number value=\\""+base+"\\" min=0 max=100 step=1 style=\'width:46px\' onchange=\\"portfolio["+i+"].initialRatio=parseFloat(this.value)||0;autoNormalize("+i+");renderTable()\\"></td>"' +
+'      +"<td>"+(isCash?"<span style=\'color:#9aa0a6\'>-</span>":"<input type=number value=\\""+adj+"\\" min=-100 max=100 step=1 style=\'width:50px\' onchange=\\"portfolio["+i+"].ratio=parseFloat(this.value)||0;renderTable()\\">")+"</td>"' +
+'      +"<td><span style=\'font-weight:bold;"+actualCls+"\'>"+actual+"%</span></td>"' +
 '      +"<td><button class=db onclick=\\"removeStock("+i+")\\" title=삭제>✕</button></td>"' +
 '      +"</tr>";' +
 '  }).join("");' +
@@ -137,8 +145,32 @@ function openPortfolioManagerDialog() {
 '  updateTotal();' +
 '}' +
 
+// 기준비율(초기비율) 합계가 100%가 되도록 나머지 종목에 자동으로 분배한다.
+// excludeIdx로 지정한 행(방금 추가/수정한 종목)은 건드리지 않고, 나머지 종목의
+// 현재 비중에 비례해서 남는/모자란 만큼을 나눠 갖는다. 조정값(운용비율 델타)은 건드리지 않는다.
+'function autoNormalize(excludeIdx){' +
+'  function actual(r){var b=parseFloat(r.initialRatio)||0;return r.type==="현금"?b:b+(parseFloat(r.ratio)||0);}' +
+'  var total=portfolio.reduce(function(s,r){return s+actual(r);},0);' +
+'  var diff=100-total;' +
+'  if(Math.abs(diff)<0.5)return;' +
+'  var others=[];' +
+'  portfolio.forEach(function(r,i){if(i!==excludeIdx)others.push(i);});' +
+'  var othersTotal=others.reduce(function(s,i){return s+actual(portfolio[i]);},0);' +
+'  if(othersTotal<=0)return;' +
+'  others.forEach(function(i){' +
+'    var r=portfolio[i];' +
+'    var share=actual(r)/othersTotal;' +
+'    var base=parseFloat(r.initialRatio)||0;' +
+'    r.initialRatio=Math.max(0,Math.round(base+diff*share));' +
+'  });' +
+'}' +
+
 'function updateTotal(){' +
-'  var t=portfolio.reduce(function(s,r){return s+(parseFloat(r.ratio)||0);},0);' +
+'  var t=portfolio.reduce(function(s,r){' +
+'    var base=parseFloat(r.initialRatio)||0;' +
+'    var adj=r.type==="현금"?0:(parseFloat(r.ratio)||0);' +
+'    return s+base+adj;' +
+'  },0);' +
 '  var el=document.getElementById("totalPct");' +
 '  el.textContent=t.toFixed(0)+"%";' +
 '  el.className="tv "+(Math.abs(t-100)<0.5?"ok":"warn");' +
@@ -146,15 +178,18 @@ function openPortfolioManagerDialog() {
 
 'function removeStock(i){' +
 '  var r=portfolio[i];' +
+'  var deleted=true;' +
 '  if(r&&r.type!=="현금"&&parseFloat(r.ratio)>0){' +
 '    if(confirm((r.name||r.code)+"을(를) 목표에서 제외합니다.\\n비율을 0%로 바꿔 대시보드에서 매도 후 삭제하거나,\\n[확인]=즉시 삭제 / [취소]=0%로 변경")){' +
 '      portfolio.splice(i,1);' +
 '    } else {' +
 '      portfolio[i]=Object.assign({},r,{ratio:0});' +
+'      deleted=false;' +
 '    }' +
 '  } else {' +
 '    portfolio.splice(i,1);' +
 '  }' +
+'  if(deleted)autoNormalize(-1);' + // 실제로 목록에서 빠진 만큼 남은 종목들에게 비례 배분
 '  renderTable();' +
 '}' +
 
@@ -195,23 +230,29 @@ function openPortfolioManagerDialog() {
 '  foundStock.type=document.getElementById("newType").value;' +
 '  var dup=portfolio.find(function(r){return r.code&&r.code===foundStock.code;});' +
 '  if(dup){alert("이미 포트폴리오에 있는 종목입니다.");return;}' +
-'  portfolio.push({code:foundStock.code,name:foundStock.name,ratio:ratio,type:foundStock.type});' +
+'  portfolio.push({code:foundStock.code,name:foundStock.name,initialRatio:ratio,ratio:0,type:foundStock.type});' +
+'  autoNormalize(portfolio.length-1);' + // 새 종목 비율만큼 기존 종목들을 비례로 줄여 100%를 유지
 '  foundStock=null;' +
 '  document.getElementById("codeInput").value="";' +
 '  document.getElementById("foundBox").style.display="none";' +
-'  showMsg("✅ 추가되었습니다. 저장 버튼을 눌러 확정하세요.","ok");' +
+'  showMsg("✅ 추가되었습니다. 다른 종목 비중을 자동으로 조정했습니다. 저장 버튼을 눌러 확정하세요.","ok");' +
 '  renderTable();' +
 '}' +
 
 'function addCash(){' +
 '  var dup=portfolio.find(function(r){return r.name==="현금"||r.type==="현금";});' +
 '  if(dup){alert("현금 행이 이미 있습니다.");return;}' +
-'  portfolio.push({code:"",name:"현금",ratio:5,type:"현금"});' +
+'  portfolio.push({code:"",name:"현금",initialRatio:5,ratio:0,type:"현금"});' +
+'  autoNormalize(portfolio.length-1);' +
 '  renderTable();' +
 '}' +
 
 'function saveAll(){' +
-'  var total=portfolio.reduce(function(s,r){return s+r.ratio;},0);' +
+'  var total=portfolio.reduce(function(s,r){' +
+'    var base=parseFloat(r.initialRatio)||0;' +
+'    var adj=r.type==="현금"?0:(parseFloat(r.ratio)||0);' +
+'    return s+base+adj;' +
+'  },0);' +
 '  if(Math.abs(total-100)>0.5){' +
 '    if(!confirm("비율 합계가 "+total.toFixed(0)+"%입니다. (100%가 아님)\\n계속 저장하시겠습니까?"))return;' +
 '  }' +
@@ -287,24 +328,16 @@ function savePortfolioSettings(rows) {
   const sheet = ss.getSheetByName('📋 포트폴리오설정');
   if (!sheet) throw new Error('포트폴리오설정 시트를 찾을 수 없습니다.');
 
-  // 기존 기준비율(C열) 보존: 새 종목은 운용비율로 초기화
   const lastRow = sheet.getLastRow();
-  const existingInitialRatios = {};
   if (lastRow >= 3) {
-    sheet.getRange(3, 1, lastRow - 2, 3).getValues().forEach(function(row) {
-      const code = String(row[0]).trim();
-      if (code && typeof row[2] === 'number' && row[2] > 0) {
-        existingInitialRatios[code] = row[2];
-      }
-    });
     sheet.getRange(3, 1, lastRow - 2, 5).clearContent();
   }
 
   if (rows.length > 0) {
-    // col: 종목코드 | 종목명 | 기준비율(고정) | 운용비율 | 유형
+    // col: 종목코드 | 종목명 | 기준비율(C) | 조정값(D, +/-) | 유형
     const values = rows.map(function(r) {
-      const initialRatio = existingInitialRatios[r.code] || r.initialRatio || r.ratio || 0;
-      return [r.code || '', r.name || '', initialRatio, r.ratio || 0, r.type || ''];
+      const isCash = r.type === '현금';
+      return [r.code || '', r.name || '', r.initialRatio || 0, isCash ? 0 : (r.ratio || 0), r.type || ''];
     });
     const range = sheet.getRange(3, 1, values.length, 5);
     range.setValues(values);
@@ -314,4 +347,34 @@ function savePortfolioSettings(rows) {
   }
 
   return true;
+}
+
+/**
+ * D열을 절대값→조정값으로 1회 자동 마이그레이션 (기존 시트 호환)
+ * 판별: D열 합계(현금 포함)가 100에 가까우면(90~110) D열이 아직 절대비율 상태로 보고 D = D - C 로 변환.
+ * getTargetPortfolio() 등 시트를 읽는 모든 진입점 앞단에서 호출해 항상 조정값 상태를 보장한다.
+ */
+function migratePortfolioToAdjModeIfNeeded() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('📋 포트폴리오설정');
+  if (!sheet || sheet.getLastRow() < 3) return;
+  const range = sheet.getRange(3, 1, sheet.getLastRow() - 2, 5);
+  const values = range.getValues();
+
+  const dSum = values.reduce((sum, row) => sum + (parseFloat(row[3]) || 0), 0);
+  if (dSum < 90 || dSum > 110) return; // 조정값 상태(+/- 작은 값)면 합계가 100 근처일 리 없음
+
+  let changed = 0;
+  values.forEach(function(row) {
+    const base = parseFloat(row[2]) || 0;
+    const d    = parseFloat(row[3]) || 0;
+    if (d !== 0) {
+      row[3] = d - base;
+      changed++;
+    }
+  });
+  if (changed > 0) {
+    range.setValues(values);
+    ss.toast(changed + '개 종목 D열(운용비율)을 조정값(+/-)으로 자동 변환했습니다.', '⚠️ 포트폴리오설정 자동 마이그레이션', 8);
+  }
 }
