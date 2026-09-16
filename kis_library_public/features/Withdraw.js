@@ -79,18 +79,32 @@ function openWithdrawDialog() {
 '.summary-row:last-child { border: none; font-weight: bold; font-size: 14px; }' +
 '.ok { color: #137333; } .warn { color: #f9ab00; } .info { color: #1a73e8; }' +
 '#planSection { display: none; margin-top: 14px; } #executeBtn { display: none; }' +
+'.mode-group { display: flex; gap: 6px; margin-bottom: 12px; }' +
+'.mode-group button { flex: 1; padding: 8px; border: 1.5px solid #dadce0; border-radius: 6px; background: white; font-size: 12.5px; cursor: pointer; color: #3c4043; }' +
+'.mode-group button.selected { background: #1a73e8; color: white; border-color: #1a73e8; font-weight: bold; }' +
+'#pickList { display: none; margin-bottom: 12px; border: 1px solid #f1f3f4; border-radius: 6px; max-height: 140px; overflow-y: auto; }' +
+'.pick-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #f1f3f4; font-size: 12.5px; }' +
+'.pick-row:last-child { border-bottom: none; }' +
+'.pick-row .amt { margin-left: auto; color: #5f6368; }' +
+'.pick-hint { font-size: 11px; color: #5f6368; margin: -6px 0 10px; }' +
 '</style></head><body>' +
 '<div class="cards">' +
 '<div class="card"><div class="card-label">총 자산</div><div class="card-value" id="totalEval">-</div></div>' +
 '<div class="card"><div class="card-label">예수금</div><div class="card-value" id="cashVal">-</div></div>' +
 '<div class="card"><div class="card-label">총 손익</div><div class="card-value" id="profitVal">-</div></div>' +
 '</div>' +
+'<div class="mode-group" id="modeGroup">' +
+'<button class="selected" onclick="setMode(this,\'ratio\')">⚖️ 비중 유지 비례매도</button>' +
+'<button onclick="setMode(this,\'pick\')">🎯 종목 선택 매도</button>' +
+'</div>' +
+'<div id="pickList"></div>' +
+'<div class="pick-hint" id="pickHint" style="display:none">체크한 종목에서만 팔아서 금액을 맞춥니다. (다른 종목은 그대로 유지)</div>' +
 '<div class="section-title">&#128176; 실현 금액 입력</div>' +
 '<div class="input-row"><input type="number" id="amountInput" placeholder="금액 입력 (원)" min="0" step="10000">' +
 '<button class="btn btn-green" id="recBtn" onclick="useRecommended()">추천</button></div>' +
 '<div class="calc-row"><button class="btn btn-blue" id="calcBtn" onclick="calculate()" style="flex:1">&#128290; 계산하기</button>' +
 '<button class="btn btn-outline" onclick="google.script.host.close()">닫기</button></div>' +
-'<div id="planSection"><div class="section-title">&#128203; 전체 비중 변화 (비율 유지)</div>' +
+'<div id="planSection"><div class="section-title" id="planTitle">&#128203; 전체 비중 변화 (비율 유지)</div>' +
 '<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">종목명</th><th>현재</th><th>매도</th><th>잔여</th><th>현재%</th><th>실현후%</th></tr></thead>' +
 '<tbody id="planTable"></tbody></table></div>' +
 '<div class="summary">' +
@@ -110,6 +124,25 @@ function openWithdrawDialog() {
 'document.getElementById("recBtn").textContent="추천 "+fmt(d.recommended);' +
 'if(d.recommended>0)document.getElementById("amountInput").value=d.recommended;' +
 'function useRecommended(){document.getElementById("amountInput").value=d.recommended;}' +
+'var mode="ratio"; var picked={};' +
+'function setMode(btn,m){' +
+'  mode=m;' +
+'  document.getElementById("modeGroup").querySelectorAll("button").forEach(function(b){b.classList.remove("selected");});' +
+'  btn.classList.add("selected");' +
+'  document.getElementById("pickList").style.display=m==="pick"?"block":"none";' +
+'  document.getElementById("pickHint").style.display=m==="pick"?"block":"none";' +
+'  document.getElementById("planTitle").textContent=m==="pick"?"\ud83d\udccb 선택 종목 매도 결과":"\ud83d\udccb 전체 비중 변화 (비율 유지)";' +
+'  document.getElementById("planSection").style.display="none";' +
+'}' +
+'function renderPickList(){' +
+'  var box=document.getElementById("pickList");' +
+'  box.innerHTML=d.holdings.map(function(h){' +
+'    return "<label class=pick-row>"+' +
+'      "<input type=checkbox data-code=\\""+h.code+"\\" onchange=\\"picked[\'"+h.code+"\']=this.checked\\">"+' +
+'      h.name+"<span class=amt>"+fmt(h.evalAmt)+"</span></label>";' +
+'  }).join("");' +
+'}' +
+'renderPickList();' +
 'function calcPlan(amount){' +
 '  var fee=d.fee; var targetTotal=d.totalEval-amount;' +
 '  var orders=[]; var totalSell=0; var sellMap={};' +
@@ -145,10 +178,49 @@ function openWithdrawDialog() {
 '    cashBeforeRatio:cashBeforeRatio,cashAfterRatio:cashAfterRatio,' +
 '    shortage:shortage,surplus:surplus,statusClass:shortage>1000?"warn":"ok",withdrawAmount:amount};' +
 '}' +
+'function calcPlanSelected(amount){' +
+'  var fee=d.fee;' +
+'  var selected=d.holdings.filter(function(h){return picked[h.code];});' +
+'  var totalSelectedValue=selected.reduce(function(s,h){return s+h.evalAmt;},0);' +
+'  var orders=[]; var totalSell=0; var sellMap={};' +
+'  selected.forEach(function(h){' +
+'    var weight=totalSelectedValue>0?h.evalAmt/totalSelectedValue:0;' +
+'    var targetSellAmt=Math.min(h.evalAmt,amount*weight);' +
+'    var sellQty=Math.min(h.qty,Math.ceil(targetSellAmt/(h.price*(1-fee))));' +
+'    if(sellQty<=0)return;' +
+'    var rawAmt=sellQty*h.price;' +
+'    var proceeds=Math.floor(rawAmt*(1-fee));' +
+'    totalSell+=proceeds;' +
+'    sellMap[h.code]={sellQty:sellQty,rawAmt:rawAmt,proceeds:proceeds};' +
+'    orders.push({name:h.name,code:h.code,currentQty:h.qty,currentPrice:h.price,sellQty:sellQty,sellAmount:rawAmt,actualProceeds:proceeds,remainingQty:h.qty-sellQty});' +
+'  });' +
+'  var available=totalSell+d.cash;' +
+'  var cashAfter=available-amount;' +
+'  var newTotal=cashAfter;' +
+'  d.holdings.forEach(function(h){var sk=sellMap[h.code]; var remQty=sk?h.qty-sk.sellQty:h.qty; newTotal+=remQty*h.price;});' +
+'  var allRows=d.holdings.map(function(h){' +
+'    var sk=sellMap[h.code]; var sellQty=sk?sk.sellQty:0; var remQty=h.qty-sellQty;' +
+'    return{name:h.name,code:h.code,currentQty:h.qty,sellQty:sellQty,remainingQty:remQty,' +
+'      sellAmount:sk?sk.rawAmt:0,' +
+'      beforeRatio:d.totalEval>0?h.evalAmt/d.totalEval*100:0,' +
+'      afterRatio:newTotal>0?remQty*h.price/newTotal*100:0,' +
+'      targetRatio:h.ratio};' +
+'  });' +
+'  var cashBeforeRatio=d.totalEval>0?d.cash/d.totalEval*100:0;' +
+'  var cashAfterRatio=newTotal>0?cashAfter/newTotal*100:0;' +
+'  var shortage=Math.max(0,amount-available);' +
+'  var surplus=Math.max(0,available-amount);' +
+'  return{orders:orders,allRows:allRows,totalSell:totalSell,cashAfter:cashAfter,' +
+'    cashBeforeRatio:cashBeforeRatio,cashAfterRatio:cashAfterRatio,' +
+'    shortage:shortage,surplus:surplus,statusClass:shortage>1000?"warn":"ok",withdrawAmount:amount};' +
+'}' +
 'function calculate(){' +
 '  var amount=parseInt(document.getElementById("amountInput").value)||0;' +
 '  if(amount<=0){alert("실현 금액을 입력하세요.");return;}' +
-'  var plan=calcPlan(amount);' +
+'  if(mode==="pick"&&Object.keys(picked).filter(function(k){return picked[k];}).length===0){' +
+'    alert("매도할 종목을 하나 이상 선택하세요.");return;' +
+'  }' +
+'  var plan=mode==="pick"?calcPlanSelected(amount):calcPlan(amount);' +
 '  planData=plan;' +
 '  document.getElementById("planSection").style.display="block";' +
 '  var tbody=document.getElementById("planTable"); tbody.innerHTML="";' +

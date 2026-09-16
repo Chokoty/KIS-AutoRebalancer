@@ -6,9 +6,9 @@ function showUsageGuide() {
     <html>
       <head>
         <style>
-          body { 
-            font-family: 'Malgun Gothic', sans-serif; 
-            padding: 20px; 
+          body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 20px;
             color: #3c4043;
             line-height: 1.6;
           }
@@ -29,6 +29,11 @@ function showUsageGuide() {
             border-radius: 4px;
             border-left: 4px solid #4285F4;
           }
+          .section-title.emergency {
+            border-left-color: #ea4335;
+            background-color: #fce8e6;
+            color: #c5221f;
+          }
           ul {
             margin: 0;
             padding-left: 20px;
@@ -38,19 +43,6 @@ function showUsageGuide() {
           li {
             margin-bottom: 8px;
           }
-           .fsd-box {
-            background-color: #fff8e1;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ffca28;
-            margin-top: 15px;
-            font-size: 13.5px;
-          }
-          .fsd-title {
-            color: #f57c00;
-            font-weight: bold;
-            margin-bottom: 8px;
-          }
           strong {
             color: #202124;
           }
@@ -58,33 +50,41 @@ function showUsageGuide() {
       </head>
       <body>
         <h3>📖 KIS AutoTrader 기본 사용법</h3>
-        
+
         <div class="section-title">1. 시스템 초기 세팅</div>
         <ul>
           <li><strong>⚙️ 초기 설정:</strong> 가장 먼저 메뉴에서 초기 설정을 눌러 필수 시트들을 생성하세요.</li>
-          <li><strong>🔑 API 키 입력:</strong> <code>⚙️ 설정</code> 시트에 한국투자증권 접속 정보(APP KEY, SECRET, 계좌번호)와 Gemini AI API 키를 입력하세요.</li>
+          <li><strong>🛡️ API 키 보안 설정:</strong> 메뉴 → 설정 및 관리에서 한국투자증권 접속 정보(APP KEY, SECRET, 계좌번호)와 Gemini API 키를 입력하세요. 시트 셀이 아니라 본인 계정에만 암호화 저장됩니다.</li>
+          <li><strong>🔧 기본 설정:</strong> 계좌 종류(일반/ISA/모의)와 리밸런싱 임계치·수익실현 임계치·연 목표 수익률도 이 팝업에서 정합니다. <code>⚙️ 설정</code> 시트 칸을 직접 고치는 건 막혀 있습니다 — 값이 틀렸을 땐 시트가 아니라 이 팝업을 여세요.</li>
         </ul>
 
         <div class="section-title">2. 포트폴리오(비중) 관리</div>
         <ul>
-          <li><strong>📋 포트폴리오설정:</strong> 목표로 하는 종목코드와 운용 비중 총합이 100%가 되도록 기입하세요. (예: 삼성전자 50%, 현금 50%)</li>
-          <li><strong>🤖 AI 제안 받기:</strong> 메뉴에서 <code>AI 시장 분석 및 비중 제안</code>을 누르면 현재 시장 상황에 맞춰 최적의 포트폴리오 비율을 제안해 줍니다.</li>
+          <li><strong>📋 포트폴리오 종목 추가/관리:</strong> 종목코드를 검색해서 추가하고, 각 종목의 기준비율(%)을 정합니다. <code>📋 포트폴리오설정</code> 시트도 직접 편집이 막혀 있습니다 — 이 팝업에서만 바꿉니다.</li>
+          <li><strong>비중 자동 계산:</strong> 종목을 추가하거나 삭제하거나 기준비율을 바꾸면, 나머지 종목들의 비율이 자동으로 비례해서 조정되어 합계가 항상 100%에 가깝게 맞춰집니다. 직접 일일이 계산해서 맞출 필요가 없습니다.</li>
+          <li><strong>🤖 AI 비중 제안:</strong> 메뉴에서 AI 분석 → AI 비중 제안을 누르면 현재 시장 상황에 맞춘 조정안을 보여줍니다. 사람이 확인하고 승인해야 실제로 반영됩니다.</li>
         </ul>
 
         <div class="section-title">3. 매매 및 자동화</div>
         <ul>
-          <li><strong>⚡ 리밸런싱 실행:</strong> 대시보드에서 <code>리밸런싱 실행</code>을 누르면 설정된 목표 비중에 맞춰 자동으로 초과분은 매도하고 부족분은 매수합니다.</li>
-          <li><strong>🛣️ 고속도로 차선 유지 (정기 리밸런싱):</strong> 매주 월요일 오전 10시에 자동으로 리밸런싱을 실행합니다.</li>
-          <li><strong>🤖 AI 자율 포트폴리오 관리:</strong> 매일 AI가 알아서 시장을 분석하고 비중을 조절하며 자동 매매를 수행합니다.</li>
+          <li><strong>⚡ 리밸런싱 실행:</strong> 목표 비중과 현재 비중의 차이가 임계치 이상인 종목만 매도 후 매수합니다.</li>
+          <li><strong>🛣️ 차선유지 (정기 리밸런싱):</strong> 지정한 요일·시간에 자동으로 리밸런싱을 실행합니다. 마지막 실행 후 며칠 이내면 자동으로 건너뜁니다.</li>
         </ul>
 
-        <div class="section-title">4. 💰 수익 실현</div>
+        <div class="section-title emergency">4. 🚨 긴급 대응 — 계획에 없던 일이 생겼을 때</div>
         <ul>
-          <li>메뉴의 <code>수익 실현 창 열기</code>를 통해 원하는 금액을 입력하면 보유 비중에 비례하여 자동으로 종목별 매도 수량을 계산해 줍니다.</li>
-          <li>매도 후 인출 금액은 <strong>2주간 리밸런싱 예수금에서 보호</strong>됩니다 (실수령 전 재매수 방지).</li>
+          <li><strong>🔴 종목 즉시 전량매도:</strong> 목표 비중과 무관하게, 보유 종목 하나를 골라 지금 당장 시장가로 전부 정리합니다. (포트폴리오에서 종목을 삭제하거나 비중을 0%로 바꾸는 것과는 다릅니다 — 그건 "다음 리밸런싱에서 이 종목을 목표로 안 본다"는 뜻일 뿐, 실제로 팔아주지는 않습니다.)</li>
+          <li><strong>🚨 자동매매 긴급 정지:</strong> 차선유지(정기 리밸런싱) 예약을 즉시 끕니다. 이미 꺼져 있으면 그렇다고 알려줄 뿐, 실수로 다시 켜지지 않습니다.</li>
         </ul>
 
-        <div class="section-title">5. 📐 리밸런싱 계산 방식</div>
+        <div class="section-title">5. 💰 수익 실현 (현금화)</div>
+        <ul>
+          <li><strong>⚖️ 비중 유지 비례매도 (기본):</strong> 필요한 금액을 입력하면 보유 비중을 그대로 유지한 채 여러 종목에서 조금씩 나눠 팝니다.</li>
+          <li><strong>🎯 종목 선택 매도:</strong> 특정 종목 한두 개만 체크해서, 그 종목들에서만 필요한 금액만큼 팝니다. 자잘하게 여러 종목을 건드리고 싶지 않을 때 씁니다.</li>
+          <li>매도 후 인출 금액은 <strong>2주간 리밸런싱 매수 여력에서 제외</strong>됩니다 — 실제로 인출하기 전에 자동매매가 그 돈으로 재매수하는 걸 막아줍니다.</li>
+        </ul>
+
+        <div class="section-title">6. 📐 리밸런싱 계산 방식</div>
         <ul>
           <li><strong>임계치 기준:</strong> 현재 비중이 목표 비중과 <code>리밸런싱 임계치(%)</code> 이상 차이날 때만 주문이 발생합니다. (기본 2%p)</li>
           <li><strong>매도 우선:</strong> 초과 종목을 먼저 매도하여 현금을 확보한 뒤, 부족 종목을 매수합니다.</li>
@@ -97,7 +97,7 @@ function showUsageGuide() {
           <li><strong>수익실현 임계치:</strong> 특정 종목의 수익률이 설정값 이상일 때 AI 브리핑 시 해당 종목의 비중 축소를 우선 고려합니다.</li>
         </ul>
 
-        <div class="section-title">6. 📊 대시보드 항목 설명</div>
+        <div class="section-title">7. 📊 대시보드 항목 설명</div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="background:#e8f0fe;">
@@ -120,18 +120,6 @@ function showUsageGuide() {
             <tr style="background:#f8f9fa"><td style="padding:5px 10px;border:1px solid #dadce0;font-weight:bold">💡 월 인출 추천</td><td style="padding:5px 10px;border:1px solid #dadce0;">목표 수익률(연) 기준으로 매달 인출 가능한 권장 금액</td></tr>
           </tbody>
         </table>
-
-        <div class="fsd-box">
-          <div class="fsd-title">🏎️ FSD 드라이빙 모드 (AI 성향 설정)란?</div>
-          AI 브리핑 시 전략을 결정하는 위험 감수 성향입니다.
-          <ul style="margin-top: 5px;">
-            <li><strong>🍃 Chill:</strong> 원금 보존 최우선. 보수적, 안전 자산(금/달러) 위주</li>
-            <li><strong>⚖️ Standard:</strong> (기본값) 수익과 위험 방어의 적절한 균형</li>
-            <li><strong>🏃 Hurry:</strong> 시장 기회를 엿보며 적극적으로 주식 비중 확대</li>
-            <li><strong>🔥 Assertive:</strong> 단기 손실을 감내하더라도 초과 수익 강하게 추구</li>
-            <li><strong>💀 Mad Max:</strong> 가장 공격적인 투자로 리스크 무시, 수익 극대화</li>
-          </ul>
-        </div>
 
         <div style="text-align: center; margin-top: 30px;">
           <button onclick="google.script.host.close()" style="background-color: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">확인</button>
