@@ -31,6 +31,11 @@ function onOpen() {
       .addSeparator()
       .addItem('🔓 보호 예수금 해제', 'releaseProtectedCash'))
     .addSeparator()
+    .addSubMenu(ui.createMenu('🚨 긴급 대응')
+      .addItem('🔴 종목 즉시 전량매도', 'openEmergencySellDialog')
+      .addSeparator()
+      .addItem('🚨 자동매매 긴급 정지', 'emergencyStopAutomation'))
+    .addSeparator()
     .addItem('🛣️ 차선유지 설정 (정기 리밸런싱)', 'showHighwaySettings')
     .addItem('📊 시스템 상태 보기', 'showSystemStatus')
     .addSeparator()
@@ -202,6 +207,28 @@ function toggleHighwayLaneKeeping() {
     props.setProperty('HIGHWAY_LANE_KEEPING', 'FALSE');
     SpreadsheetApp.getUi().alert('🛣️ 차선 유지(정기 리밸런싱)가 [OFF] 되었습니다.');
   }
+  updateDashboard();
+}
+
+/**
+ * 🚨 긴급 정지 — 차선유지(정기 자동매매)를 무조건 끈다.
+ * toggleHighwayLaneKeeping()과 달리 토글이 아니라 "즉시 정지" 동작이라
+ * 이미 꺼져 있어도 다시 켜지지 않는다.
+ */
+function emergencyStopAutomation() {
+  const props = PropertiesService.getScriptProperties();
+  const wasOn = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'scheduledBiWeeklyRebalance');
+
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'scheduledBiWeeklyRebalance') ScriptApp.deleteTrigger(t);
+  });
+  props.setProperty('HIGHWAY_LANE_KEEPING', 'FALSE');
+
+  SpreadsheetApp.getUi().alert(
+    wasOn
+      ? '🚨 긴급 정지 완료\n\n차선유지(정기 자동매매)를 즉시 중단했습니다.\n다시 켜려면 메뉴 → 차선유지 설정에서 요일/시간을 다시 선택하세요.'
+      : '🚨 이미 정지된 상태\n\n자동매매(차선유지)가 이미 꺼져 있습니다.'
+  );
   updateDashboard();
 }
 

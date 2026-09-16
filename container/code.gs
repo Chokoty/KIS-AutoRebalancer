@@ -61,11 +61,16 @@ function automatedRefreshRoutine()          { KIS.automatedRefreshRoutine(); }
 // 자동화
 function scheduledBiWeeklyRebalance()       { KIS.scheduledBiWeeklyRebalance(); }
 function toggleHighwayLaneKeeping()         { KIS.toggleHighwayLaneKeeping(); }
+function emergencyStopAutomation()          { KIS.emergencyStopAutomation(); }
 
 // 수익 실현
 function openWithdrawDialog()               { KIS.openWithdrawDialog(); }
 function executeWithdrawPlan(planData)      { return KIS.executeWithdrawPlan(planData); }
 function releaseProtectedCash()             { KIS.releaseProtectedCash(); }
+
+// 긴급 대응
+function openEmergencySellDialog()          { KIS.openEmergencySellDialog(); }
+function executeEmergencySell(code, name, qty, price) { return KIS.executeEmergencySell(code, name, qty, price); }
 
 // 설정
 function setupSheets()                      { KIS.setupSheets(); }
