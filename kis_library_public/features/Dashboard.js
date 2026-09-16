@@ -468,7 +468,8 @@ function calculateRebalancePlan(managedTotal, balance, holdings, targetPortfolio
   });
 
   const targetCashRatio = options.targetCashRatio || 5;
-  const effectiveBuyPower = balance.buyPower;
+  // 수익 실현으로 인출 대기 중인 금액은 매수 여력에서 제외 — 실제로 빠져나가기 전에 재매수되는 것을 막는다.
+  const effectiveBuyPower = Math.max(0, balance.buyPower - getProtectedCash().amount);
 
   const actualCash = effectiveBuyPower + totalSellAmount; // 매도 후 가용 현금
   const targetCashAmount = managedTotal * (targetCashRatio / 100); // 목표 현금 보유액 (managedTotal은 이미 현금 포함 총액)
