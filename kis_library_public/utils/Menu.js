@@ -359,22 +359,23 @@ function openBasicSettingsDialog() {
 <head>
 <meta charset="utf-8">
 <style>
-  body { font-family: 'Google Sans', Arial, sans-serif; padding: 20px; margin: 0; background: #fff; }
-  h3 { margin: 0 0 4px; font-size: 16px; color: #1a73e8; }
-  .dim { font-size: 12px; color: #5f6368; margin-bottom: 16px; }
-  label { display: block; font-size: 13px; font-weight: 600; color: #3c4043; margin: 14px 0 6px; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Google Sans', Arial, sans-serif; padding: 14px 18px; margin: 0; background: #fff; }
+  h3 { margin: 0 0 2px; font-size: 15px; color: #1a73e8; }
+  .dim { font-size: 11px; color: #5f6368; margin-bottom: 8px; line-height: 1.3; }
+  label { display: block; font-size: 12.5px; font-weight: 600; color: #3c4043; margin: 8px 0 4px; }
   .btn-group { display: flex; gap: 6px; }
   .btn-group button {
-    padding: 7px 14px; border: 1.5px solid #dadce0; border-radius: 20px;
-    background: #fff; font-size: 13px; cursor: pointer; color: #3c4043;
+    padding: 5px 12px; border: 1.5px solid #dadce0; border-radius: 20px;
+    background: #fff; font-size: 12.5px; cursor: pointer; color: #3c4043;
   }
   .btn-group button.selected { background: #1a73e8; color: #fff; border-color: #1a73e8; font-weight: 600; }
-  input[type=number] { width: 100%; padding: 8px 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-  .row-hint { font-size: 11px; color: #9aa0a6; margin-top: 4px; }
-  .actions { margin-top: 22px; text-align: right; }
+  input[type=number] { width: 100%; padding: 6px 9px; border: 1px solid #dadce0; border-radius: 6px; font-size: 13px; }
+  .row-hint { font-size: 10.5px; color: #9aa0a6; margin-top: 2px; line-height: 1.3; }
+  .actions { margin-top: 12px; text-align: right; }
   .save-btn {
     background: #1a73e8; color: #fff; border: none; border-radius: 4px;
-    padding: 9px 24px; font-size: 14px; cursor: pointer; font-weight: 600;
+    padding: 7px 20px; font-size: 13px; cursor: pointer; font-weight: 600;
   }
   .save-btn:hover { background: #1558b0; }
 </style>
@@ -433,7 +434,7 @@ function openBasicSettingsDialog() {
 </body>
 </html>`;
 
-  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(360).setHeight(440).setTitle('기본 설정');
+  const htmlOutput = HtmlService.createHtmlOutput(html).setWidth(360).setHeight(430).setTitle('기본 설정');
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, '🔧 기본 설정');
 }
 
