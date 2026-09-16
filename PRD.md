@@ -89,12 +89,20 @@ FINDING 01의 재매수 위험을 사용자가 수동으로 피할 방법이 차
 
 > **"보호 예수금이 있으면 자동매매를 건너뛰고 알림"은 별도 항목에서 뺐다.** `effectiveBuyPower`가 보호 금액을 이미 매수 여력에서 제외하므로, 스케줄된 리밸런싱이 돌아도 그 돈으로는 매수 주문 자체가 나오지 않는다 — 전체를 건너뛰게 만들면 나머지 95% 자산의 정상적인 리밸런싱까지 최대 14일 막히는 부작용이 더 크다.
 
-## 6. 확장 요구사항 — 멀티 증권사 지원
+## 6. 멀티 증권사 지원 — 검토했으나 이 프로젝트 범위에서 제외
 
-기존에 KIS 전용으로 짜여 있던 것을, 나무증권(NH투자증권 PLUG API)과 토스증권 Open API까지
-지원하도록 확장한다.
+**결정 (2026-09-17): 이 Google Sheets/Apps Script 프로젝트는 한국투자증권(KIS) 전용으로 유지한다.**
+나무증권·토스증권은 별도로 작업한다 — 이 시트/코드베이스에는 포함하지 않는다.
 
-### 6.1 API 비교
+이 결정에 따라, 세션 중 만들었던 `core/KISClient.js` → `core/BrokerClient.js`(디스패처) +
+`brokers/KISAdapter.js`(KIS 구현) 분리를 되돌렸다. 이 프로젝트 안에서는 KIS 외 증권사로 분기할
+일이 없으므로, 디스패처가 있으면 "나중에 나무/토스를 붙일 수 있다"는 신호만 주고 실제로는 죽은
+코드가 된다. `getBalance/getHoldings/getCurrentPrice/placeOrder`는 다시 `core/KISClient.js`
+하나에서 KIS API를 직접 호출한다.
+
+아래 6.1 API 비교는 나무·토스를 별도 프로젝트로 만들 때 참고할 수 있어 남겨둔다.
+
+### 6.1 API 비교 (참고용 — 별도 프로젝트에서 활용)
 
 | 항목 | KIS(현재) | 나무증권 · NH PLUG | 토스증권 |
 |---|---|---|---|
@@ -112,22 +120,12 @@ FINDING 01의 재매수 위험을 사용자가 수동으로 피할 방법이 차
 - 나무는 모의투자용 토큰도 실전 서버에서만 발급된다 — KIS처럼 완전히 분리된 mock 엔드포인트가
   아니다.
 
-### 6.2 결정된 사항
+### 6.2 나무·토스는 어떻게 할 것인가
 
-- **계좌 운용 모델**: 증권사별 시트 사본. 시트 하나가 증권사 계좌 하나만 담당하고, KIS/나무/토스를
-  각각 독립적으로 운용한다. 계좌 간 통합 리밸런싱은 하지 않는다.
-- **구현 순서**: `broker-interface` 추출 → `kis-adapter` → `namuh-adapter` → `toss-adapter`.
-
-### 6.3 진행 상황
-
-- [x] **broker-interface 추출** — `core/KISClient.js`를 디스패처(`core/BrokerClient.js`)로 분리하고,
-      기존 구현은 `brokers/KISAdapter.js`로 옮겼다. `getBalance/getHoldings/getCurrentPrice/placeOrder`
-      4개 전역 함수는 그대로 유지되며(Dashboard/Withdraw/PortfolioManager/code.js 수정 없음),
-      내부적으로 `getBrokerCode()`가 가리키는 증권사(`ScriptProperties.BROKER`, 기본값 `'KIS'`)에
-      따라 실제 어댑터로 위임한다. 나무/토스를 선택하면 "아직 준비 중"이라는 명시적 에러를 던진다
-      (조용히 KIS로 되돌아가지 않음).
-- [ ] `namuh-adapter` — NH PLUG 신규 구현
-- [ ] `toss-adapter` — 토스 신규 구현 (모의투자 없음, 소액 실거래 검증 필요)
+이 시트/코드베이스 밖에서 별도 프로젝트로 진행한다. 이 문서의 6.1 비교표와, 이번 세션에서
+잠깐 만들었던 broker-interface 패턴(4개 메서드로 추상화)은 그 프로젝트를 시작할 때 참고할 수
+있다. 계좌 운용 모델(증권사별로 독립 운용할지, 통합할지)은 그 별도 프로젝트를 시작할 때 다시
+정한다.
 
 ## 7. 열린 질문
 
