@@ -3,18 +3,10 @@ function setupDashboardSheet(sheet) {
   // 전체 삭제 대신 필요한 부분만 초기화 (UX 개선)
   // sheet.clear(); -> 삭제
 
-  sheet.getRange('A1:N1').merge()
-    .setValue('📊 포트폴리오 대시보드')
-    .setFontWeight('bold')
-    .setFontSize(16)
-    .setHorizontalAlignment('center')
-    .setBackground('#4285f4')
-    .setFontColor('white');
-  
-  // 버전 업데이트 알림 배너 (신규 버전 배포 시 1회만 표시, 업데이트 내역 확인 시 소멸)
+  // 버전 업데이트 알림 배너 (신규 버전 배포 시 1회만 표시, 업데이트 내역 확인 시 소멸) — 1행
   const updateMsg = checkVersionUpdate();
   if (updateMsg) {
-    sheet.getRange('A2:N2').merge()
+    sheet.getRange('A1:N1').merge()
       .setValue(updateMsg)
       .setFontWeight('bold')
       .setFontColor('white')
@@ -22,8 +14,16 @@ function setupDashboardSheet(sheet) {
       .setHorizontalAlignment('center')
       .setFontSize(11);
   } else {
-    sheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
+    sheet.getRange('A1:N1').breakApart().clearContent().setBackground('white');
   }
+
+  sheet.getRange('A2:N2').merge()
+    .setValue('📊 포트폴리오 대시보드')
+    .setFontWeight('bold')
+    .setFontSize(16)
+    .setHorizontalAlignment('center')
+    .setBackground('#4285f4')
+    .setFontColor('white');
   
   // 요약 정보 라벨 (A열)
   sheet.getRange('A3:A7').setValues([

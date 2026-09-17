@@ -35,10 +35,10 @@ function syncTemplateVersion(silent = false) {
       ss.toast(`시트 버전이 ${KIS_SYSTEM_VERSION} (으)로 동기화되었습니다.`, '✅ 버전 업데이트 완료');
     }
     
-    // 대시보드 시트가 열려있다면 즉시 알림 배너 지우기
+    // 대시보드 시트가 열려있다면 즉시 알림 배너 지우기 (배너는 1행)
     const dashboardSheet = ss.getSheetByName('📊 대시보드');
     if (dashboardSheet) {
-      dashboardSheet.getRange('A2:N2').breakApart().clearContent().setBackground('white');
+      dashboardSheet.getRange('A1:N1').breakApart().clearContent().setBackground('white');
     }
   }
 }

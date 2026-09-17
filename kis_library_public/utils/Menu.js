@@ -1,7 +1,28 @@
+/**
+ * automatedRefreshRoutine 트리거를 30분 간격 시간 기반으로 유지한다.
+ * 예전 버전(onOpen 트리거)이 남아있으면 지우고 새로 만든다 — 이미 30분 간격
+ * 트리거가 있으면 아무 것도 하지 않는다. onOpen()에서 매번 호출되지만
+ * 실제로 트리거를 만드는 건 처음 한 번뿐이다.
+ */
+function ensureAutoRefreshTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  const existing = triggers.filter(t => t.getHandlerFunction() === 'automatedRefreshRoutine');
+  const alreadyTimeBased = existing.some(t => t.getEventType() === ScriptApp.EventType.CLOCK);
+  if (alreadyTimeBased) return;
+
+  existing.forEach(t => ScriptApp.deleteTrigger(t)); // 예전 onOpen 트리거 제거
+  ScriptApp.newTrigger('automatedRefreshRoutine')
+    .timeBased()
+    .everyMinutes(30)
+    .create();
+}
+
 // 메뉴 추가 (라이브러리용)
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  ensureAutoRefreshTrigger();
 
   // 시트 열릴 때 설정 안내 토스트
   // TEMPLATE_VERSION 미설정 = 초기설정 미실행 시트 (새 복사본 등)
@@ -16,8 +37,6 @@ function onOpen() {
     }
   }
   ui.createMenu('📊 KIS AutoTrader')
-    .addItem('💰 계좌 현황 새로고침', 'updateAccountSheet')
-    .addItem('🔄 대시보드 새로고침', 'updateDashboard')
     .addItem('⚡ 리밸런싱 실행', 'executeRebalanceFromDashboard')
     .addSeparator()
     .addSubMenu(ui.createMenu('🚨 긴급 대응 — 급할 때 여기부터')
@@ -37,6 +56,9 @@ function onOpen() {
       .addItem('🔓 보호 예수금 해제', 'releaseProtectedCash'))
     .addSeparator()
     .addItem('🛣️ 차선유지 설정 (정기 리밸런싱)', 'showHighwaySettings')
+    .addSubMenu(ui.createMenu('🔄 새로고침')
+      .addItem('💰 계좌 현황 새로고침', 'updateAccountSheet')
+      .addItem('🔄 대시보드 새로고침', 'updateDashboard'))
     .addItem('📊 시스템 상태 보기', 'showSystemStatus')
     .addSeparator()
     .addItem('📜 업데이트 내역 보기', 'showVersionHistory')
@@ -670,15 +692,9 @@ function setupSheets() {
   // 8. 기술지표이력 시트
   setupTAHistorySheet();
   
-  // 9. 자동 새로고침 트리거 기본 생성 (onOpen)
-  const triggers = ScriptApp.getProjectTriggers();
-  const hasRefreshTrigger = triggers.some(t => t.getHandlerFunction() === 'automatedRefreshRoutine');
-  if (!hasRefreshTrigger) {
-    ScriptApp.newTrigger('automatedRefreshRoutine')
-      .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
-      .onOpen()
-      .create();
-  }
+  // 9. 자동 새로고침 트리거 기본 생성 (30분마다 백그라운드 — 시트를 열 때마다 5초씩 멈추는 걸 피하려고
+  //    onOpen 대신 시간 기반 트리거를 쓴다. 공유된 시트라면 누가 열든 매번 API를 호출하던 것도 방지된다.)
+  ensureAutoRefreshTrigger();
   
   // 초기 템플릿 세팅 시 버전을 동기화합니다.
   syncTemplateVersion();
